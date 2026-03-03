@@ -27,7 +27,7 @@ interface DataTableProps<T> {
   onRowClick?: (item: T) => void;
 }
 
-export function DataTable<T extends Record<string, unknown> & { id?: React.Key }>({
+export function DataTable<T extends { id?: React.Key; [key: string]: any }>({
   data,
   columns,
   searchPlaceholder = "Buscar...",
