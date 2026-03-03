@@ -20,66 +20,66 @@ export type Database = {
           cnpj: string
           contatos: string | null
           created_at: string
+          deleted_at: string | null
           entrega_propria: boolean
           id: string
           nome: string
           ultima_atualizacao: string
-          deleted_at: string | null
         }
         Insert: {
           atualizado_por?: string | null
           cnpj: string
           contatos?: string | null
           created_at?: string
+          deleted_at?: string | null
           entrega_propria?: boolean
           id?: string
           nome: string
           ultima_atualizacao?: string
-          deleted_at?: string | null
         }
         Update: {
           atualizado_por?: string | null
           cnpj?: string
           contatos?: string | null
           created_at?: string
+          deleted_at?: string | null
           entrega_propria?: boolean
           id?: string
           nome?: string
           ultima_atualizacao?: string
-          deleted_at?: string | null
         }
         Relationships: []
       }
       materiais: {
         Row: {
           created_at: string
+          deleted_at: string | null
           estoque_minimo: number
           id: string
           nome: string
           tempo_producao_padrao: number | null
           unidade: string
           updated_at: string
-          deleted_at: string | null
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           estoque_minimo?: number
           id?: string
           nome: string
           tempo_producao_padrao?: number | null
           unidade?: string
           updated_at?: string
-          deleted_at?: string | null
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           estoque_minimo?: number
           id?: string
           nome?: string
           tempo_producao_padrao?: number | null
           unidade?: string
           updated_at?: string
-          deleted_at?: string | null
         }
         Relationships: []
       }
@@ -87,6 +87,7 @@ export type Database = {
         Row: {
           atualizado_por: string | null
           created_at: string
+          deleted_at: string | null
           fornecedor_id: string
           id: string
           lead_time_dias: number
@@ -95,11 +96,11 @@ export type Database = {
           preco_atual: number
           ultima_atualizacao: string
           validade_preco: string | null
-          deleted_at: string | null
         }
         Insert: {
           atualizado_por?: string | null
           created_at?: string
+          deleted_at?: string | null
           fornecedor_id: string
           id?: string
           lead_time_dias?: number
@@ -108,11 +109,11 @@ export type Database = {
           preco_atual?: number
           ultima_atualizacao?: string
           validade_preco?: string | null
-          deleted_at?: string | null
         }
         Update: {
           atualizado_por?: string | null
           created_at?: string
+          deleted_at?: string | null
           fornecedor_id?: string
           id?: string
           lead_time_dias?: number
@@ -121,7 +122,6 @@ export type Database = {
           preco_atual?: number
           ultima_atualizacao?: string
           validade_preco?: string | null
-          deleted_at?: string | null
         }
         Relationships: [
           {
@@ -144,16 +144,17 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          deleted_at: string | null
           description: string | null
           id: string
           name: string
           status: string
           updated_at: string
-          deleted_at: string | null
         }
         Insert: {
           address?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name: string
@@ -163,6 +164,7 @@ export type Database = {
         Update: {
           address?: string | null
           created_at?: string
+          deleted_at?: string | null
           description?: string | null
           id?: string
           name?: string
