@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import SelectObra from "./SelectObra";
+import Home from "./Home";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -21,8 +21,7 @@ const Index = () => {
     );
   }
 
-  // authenticated: show selection/management screen directly
-  return <SelectObra />;
+  return <Home />;
 };
 
 export default Index;
