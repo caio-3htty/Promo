@@ -2,5 +2,5 @@ import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
 
-// Force rebuild v3 - env reload
+// Force rebuild v4 - env.local
 createRoot(document.getElementById("root")!).render(<App />);
