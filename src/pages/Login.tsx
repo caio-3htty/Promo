@@ -23,7 +23,7 @@ const Login = () => {
 
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/obras", { replace: true });
+      navigate("/", { replace: true });
     }
   }, [authLoading, navigate, user]);
 

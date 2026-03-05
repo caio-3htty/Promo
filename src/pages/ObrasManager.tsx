@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRoles } from "@/hooks/useUserRoles";
@@ -14,14 +15,16 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, ChevronLeft, LogOut } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Obra = Tables<"obras">;
 
 const ObrasManager = () => {
+  const { obraId } = useParams();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
   const { data: roles } = useUserRoles();
   const isGestor = roles?.includes("gestor");
 
@@ -149,15 +152,15 @@ const ObrasManager = () => {
     }] : []),
   ];
 
-  return (
-    <PageShell title="Obras">
+  const content = (
+    <>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-semibold">
             {showTrash ? "Lixeira de Obras" : "Gerenciar Obras"}
           </h2>
           <p className="text-muted-foreground">
-            {showTrash ? "Registros apagados (30 dias)" : ""}
+            {showTrash ? "Registros apagados (30 dias)" : "Clique em uma obra para acessar"}
           </p>
         </div>
         {isGestor && (
@@ -173,7 +176,13 @@ const ObrasManager = () => {
       </div>
 
       {isLoading ? <p className="text-muted-foreground">Carregando...</p> : (
-        <DataTable data={obras} columns={columns} searchKeys={["name", "address"]} searchPlaceholder="Buscar obras..." />
+        <DataTable
+          data={obras}
+          columns={columns}
+          searchKeys={["name", "address"]}
+          searchPlaceholder="Buscar obras..."
+          onRowClick={showTrash ? undefined : (o) => navigate(`/dashboard/${o.id}`)}
+        />
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -197,7 +206,30 @@ const ObrasManager = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </PageShell>
+    </>
+  );
+
+  if (obraId) {
+    return <PageShell title="Obras">{content}</PageShell>;
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <header className="border-b border-border bg-card">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3 md:px-8">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate("/")}>
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+            <h1 className="text-lg font-bold">Obras</h1>
+          </div>
+          <Button variant="ghost" size="sm" onClick={signOut}>
+            <LogOut className="mr-1 h-4 w-4" /> Sair
+          </Button>
+        </div>
+      </header>
+      <main className="mx-auto max-w-6xl px-4 py-8 md:px-8">{content}</main>
+    </div>
   );
 };
 
