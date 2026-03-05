@@ -13,7 +13,7 @@ import Login from "./pages/Login";
 import MateriaisManager from "./pages/MateriaisManager";
 import MaterialFornecedorManager from "./pages/MaterialFornecedorManager";
 import NotFound from "./pages/NotFound";
-import SelectObra from "./pages/SelectObra";
+import ObrasManager from "./pages/ObrasManager";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +26,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Index />} />
-            <Route path="/obras" element={<SelectObra />} />
+            <Route path="/obras" element={<ObrasManager />} />
             <Route path="/fornecedores" element={<FornecedoresManager />} />
             <Route path="/materiais" element={<MateriaisManager />} />
             <Route path="/material-fornecedor" element={<MaterialFornecedorManager />} />

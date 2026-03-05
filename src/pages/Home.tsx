@@ -57,7 +57,7 @@ const Home = () => {
   });
 
   const shortcuts = [
-    { label: "Obras", icon: Building2, path: "/obras", count: stats?.obras, color: "bg-primary" },
+    { label: "Obras", icon: Building2, path: "/obras", count: stats?.obras, color: "bg-sky-600" },
     { label: "Fornecedores", icon: Truck, path: "/fornecedores", count: stats?.fornecedores, color: "bg-emerald-500" },
     { label: "Materiais", icon: Package, path: "/materiais", count: stats?.materiais, color: "bg-amber-500" },
     { label: "Mat. × Forn.", icon: Link2, path: "/material-fornecedor", count: null, color: "bg-violet-500" },
