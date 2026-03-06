@@ -10,6 +10,7 @@ const navItems = [
   { to: "materiais", label: "Materiais" },
   { to: "material-fornecedor", label: "Mat. × Forn." },
   { to: "pedidos", label: "Pedidos" },
+  { to: "recebimento", label: "Recebimento" },
 ];
 
 export const PageShell = ({ title, children }: { title: string; children: React.ReactNode }) => {
