@@ -15,6 +15,7 @@ import MaterialFornecedorManager from "./pages/MaterialFornecedorManager";
 import NotFound from "./pages/NotFound";
 import ObrasManager from "./pages/ObrasManager";
 import PedidosCompraManager from "./pages/PedidosCompraManager";
+import RecebimentoManager from "./pages/RecebimentoManager";
 
 const queryClient = new QueryClient();
 
@@ -43,7 +44,12 @@ const App = () => (
               path="/dashboard/:obraId/pedidos"
               element={<PedidosCompraManager />}
             />
+            <Route
+              path="/dashboard/:obraId/recebimento"
+              element={<RecebimentoManager />}
+            />
             <Route path="/pedidos" element={<PedidosCompraManager />} />
+            <Route path="/recebimento" element={<RecebimentoManager />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

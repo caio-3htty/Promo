@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      estoque_obra_material: {
+        Row: {
+          atualizado_em: string
+          atualizado_por: string | null
+          created_at: string
+          estoque_atual: number
+          id: string
+          material_id: string
+          obra_id: string
+        }
+        Insert: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          created_at?: string
+          estoque_atual?: number
+          id?: string
+          material_id: string
+          obra_id: string
+        }
+        Update: {
+          atualizado_em?: string
+          atualizado_por?: string | null
+          created_at?: string
+          estoque_atual?: number
+          id?: string
+          material_id?: string
+          obra_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "estoque_obra_material_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "estoque_obra_material_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fornecedores: {
         Row: {
           atualizado_por: string | null
@@ -178,6 +223,7 @@ export type Database = {
           codigo_compra: string | null
           criado_em: string
           criado_por: string | null
+          data_recebimento: string | null
           deleted_at: string | null
           fornecedor_id: string
           id: string
@@ -185,6 +231,7 @@ export type Database = {
           obra_id: string
           preco_unit: number
           quantidade: number
+          recebido_por: string | null
           status: string
           total: number
           updated_at: string
@@ -193,6 +240,7 @@ export type Database = {
           codigo_compra?: string | null
           criado_em?: string
           criado_por?: string | null
+          data_recebimento?: string | null
           deleted_at?: string | null
           fornecedor_id: string
           id?: string
@@ -200,6 +248,7 @@ export type Database = {
           obra_id: string
           preco_unit?: number
           quantidade?: number
+          recebido_por?: string | null
           status?: string
           total?: number
           updated_at?: string
@@ -208,6 +257,7 @@ export type Database = {
           codigo_compra?: string | null
           criado_em?: string
           criado_por?: string | null
+          data_recebimento?: string | null
           deleted_at?: string | null
           fornecedor_id?: string
           id?: string
@@ -215,6 +265,7 @@ export type Database = {
           obra_id?: string
           preco_unit?: number
           quantidade?: number
+          recebido_por?: string | null
           status?: string
           total?: number
           updated_at?: string
