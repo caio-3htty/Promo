@@ -173,6 +173,76 @@ export type Database = {
         }
         Relationships: []
       }
+      pedidos_compra: {
+        Row: {
+          codigo_compra: string | null
+          criado_em: string
+          criado_por: string | null
+          deleted_at: string | null
+          fornecedor_id: string
+          id: string
+          material_id: string
+          obra_id: string
+          preco_unit: number
+          quantidade: number
+          status: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          codigo_compra?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          deleted_at?: string | null
+          fornecedor_id: string
+          id?: string
+          material_id: string
+          obra_id: string
+          preco_unit?: number
+          quantidade?: number
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          codigo_compra?: string | null
+          criado_em?: string
+          criado_por?: string | null
+          deleted_at?: string | null
+          fornecedor_id?: string
+          id?: string
+          material_id?: string
+          obra_id?: string
+          preco_unit?: number
+          quantidade?: number
+          status?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_compra_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "fornecedores"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_compra_material_id_fkey"
+            columns: ["material_id"]
+            isOneToOne: false
+            referencedRelation: "materiais"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_compra_obra_id_fkey"
+            columns: ["obra_id"]
+            isOneToOne: false
+            referencedRelation: "obras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
