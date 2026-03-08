@@ -41,3 +41,5 @@ Workflows incluidos:
 
 Secret necessario para build remoto:
 - `EXPO_TOKEN`
+
+# Promo_APP_Android

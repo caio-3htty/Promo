@@ -36,3 +36,5 @@ Artefatos em `release/`.
 ## GitHub Actions
 - `windows-ci`: valida build web.
 - `windows-release`: gera instalador NSIS e publica artefato no workflow.
+
+# Promo_APP_Windows
