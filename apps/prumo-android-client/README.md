@@ -1,24 +1,43 @@
-# prumo-android-client
+# Prumo Android Client
 
-Aplicativo Android (Expo + React Native) conectado ao Supabase do Prumo.
+Aplicativo Android do Prumo (Expo + React Native + Supabase).
 
 ## Escopo atual
-- Login por e-mail/senha.
-- Leitura do acesso do usuário (`profiles`, `user_roles`, `user_obras`).
-- Listagem simples de obras vinculadas.
+- Login com e-mail/senha.
+- Carregamento de perfil, role e obras vinculadas.
+- Exibicao de acesso efetivo do usuario.
 
-## Configuração
-1. Copie `.env.example` para `.env`.
-2. Defina `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
-3. Rode:
+## Requisitos
+- Node.js 20+
+- npm 10+
+- Conta Expo para builds EAS
 
+## Rodar local
 ```bash
 npm install
+cp .env.example .env
 npm run start
 ```
 
-Para rodar em Android:
+## Variaveis de ambiente
+- `EXPO_PUBLIC_SUPABASE_URL`
+- `EXPO_PUBLIC_SUPABASE_ANON_KEY`
 
+## Validacao local
 ```bash
-npm run android
+npm run typecheck
 ```
+
+## Build Android (EAS)
+```bash
+npm run eas:build:preview
+npm run eas:build:production
+```
+
+## GitHub Actions
+Workflows incluidos:
+- `android-ci`: instala e roda `npm run typecheck`
+- `android-eas-build`: build EAS manual (`workflow_dispatch`)
+
+Secret necessario para build remoto:
+- `EXPO_TOKEN`

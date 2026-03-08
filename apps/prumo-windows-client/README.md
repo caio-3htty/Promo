@@ -1,18 +1,38 @@
-# prumo-windows-client
+# Prumo Windows Client
 
-Cliente Windows com conexão direta ao Supabase do Prumo.
+Cliente desktop Windows do Prumo.
 
-## Escopo atual
-- Login por e-mail/senha.
-- Leitura do estado de acesso (`profiles.is_active`, `user_roles`, `user_obras`).
-- Lista de obras vinculadas do usuário autenticado.
+## Stack
+- React + Vite
+- Supabase JS
+- Electron (empacotamento desktop)
 
-## Configuração
-1. Copie `.env.example` para `.env`.
-2. Informe URL e anon key do projeto Supabase.
-3. Rode:
+## Requisitos
+- Node.js 20+
+- npm 10+
 
+## Rodar local (web)
 ```bash
 npm install
+cp .env.example .env
 npm run dev
 ```
+
+## Rodar local (desktop)
+```bash
+npm run desktop:dev
+```
+
+## Gerar instalador Windows (.exe)
+```bash
+npm run desktop:build
+```
+Artefatos em `release/`.
+
+## Variaveis de ambiente
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+## GitHub Actions
+- `windows-ci`: valida build web.
+- `windows-release`: gera instalador NSIS e publica artefato no workflow.

@@ -14,6 +14,21 @@ Este workspace agora possui 4 apps conectados ao mesmo Supabase:
 - `prumo-windows-client`: https://github.com/caio-3htty/prumo-windows-client
 - `prumo-owner-windows`: https://github.com/caio-3htty/prumo-owner-windows
 
+## CI/CD configurado
+
+- `prumo-web-client`
+  - `ci.yml`: build + test
+  - `deploy-vercel.yml`: deploy de producao na Vercel (secrets necessarios)
+- `prumo-android-client`
+  - `ci.yml`: typecheck
+  - `eas-build-android.yml`: build Android via EAS (workflow manual)
+- `prumo-windows-client`
+  - `ci.yml`: build web
+  - `release.yml`: gera instalador NSIS (`.exe`) no GitHub Actions
+- `prumo-owner-windows`
+  - `ci.yml`: build web
+  - `release.yml`: gera instalador NSIS (`.exe`) no GitHub Actions
+
 ## Contrato minimo entre apps
 
 - Mesmo Supabase (URL e keys por `.env`).

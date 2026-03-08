@@ -1,23 +1,44 @@
-# prumo-owner-windows
+# Prumo Owner Windows
 
-Aplicativo exclusivo do dono (Windows) para governança central.
+Aplicativo desktop exclusivo do dono do Prumo.
 
 ## Escopo
 - Login no Supabase.
-- Publicar e ativar versões de template (`owner_publish_template_version`, `owner_activate_template_version`).
-- Restaurar soft-delete (`owner_restore_soft_deleted`).
-- Restaurar versão de campo crítico (`owner_restore_field_version`).
-- Sem CRUD operacional direto das tabelas de negócio.
+- Publicar/ativar versoes de template via RPC.
+- Recuperacao de dados (soft-delete e versao de campo) via RPC.
+- Sem CRUD operacional direto.
 
-## Configuração
-1. Copie `.env.example` para `.env`.
-2. Preencha `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY`.
-3. Instale dependências e rode:
+## Stack
+- React + Vite
+- Supabase JS
+- Electron (empacotamento desktop)
 
+## Requisitos
+- Node.js 20+
+- npm 10+
+
+## Rodar local (web)
 ```bash
 npm install
+cp .env.example .env
 npm run dev
 ```
 
-## Variáveis de ambiente
-Veja `apps/prumo-owner-windows/.env.example`.
+## Rodar local (desktop)
+```bash
+npm run desktop:dev
+```
+
+## Gerar instalador Windows (.exe)
+```bash
+npm run desktop:build
+```
+Artefatos em `release/`.
+
+## Variaveis de ambiente
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+## GitHub Actions
+- `owner-windows-ci`: valida build web.
+- `owner-windows-release`: gera instalador NSIS e publica artefato no workflow.

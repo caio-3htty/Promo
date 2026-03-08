@@ -3,11 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "main": "expo/AppEntry",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
+    "eas:build:preview": "eas build --platform android --profile preview",
+    "eas:build:production": "eas build --platform android --profile production"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",

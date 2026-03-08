@@ -3,11 +3,17 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "main": "electron/main.cjs",
   "description": "Windows client app (desktop web shell)",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "desktop:dev": "concurrently -k \"vite\" \"wait-on tcp:5190 && electron .\"",
+    "desktop:build": "npm run build && electron-builder --win nsis --publish never"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.98.0",
@@ -15,10 +21,37 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
     "typescript": "^5.8.3",
-    "vite": "^5.4.19"
+    "vite": "^5.4.19",
+    "wait-on": "^8.0.5"
+  },
+  "build": {
+    "appId": "com.prumo.windows.client",
+    "productName": "Prumo Windows Client",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "Prumo-Windows-Client-${version}-Setup.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
