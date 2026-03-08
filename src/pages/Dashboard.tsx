@@ -2,10 +2,12 @@ import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft, ClipboardList, LogOut, PackageSearch, Truck, Layers3 } from "lucide-react";
 
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/i18n/useI18n";
 import { canManageCadastros, roleLabelMap } from "@/lib/rbac";
 import logoPrumo from "@/assets/image.png";
 
@@ -13,6 +15,7 @@ const Dashboard = () => {
   const { obraId } = useParams();
   const navigate = useNavigate();
   const { role, obras, signOut } = useAuth();
+  const { t } = useI18n();
 
   const obra = obras.find((item) => item.id === obraId);
 
@@ -52,15 +55,18 @@ const Dashboard = () => {
               )}
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            <LogOut className="mr-1 h-4 w-4" /> Sair
-          </Button>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="mr-1 h-4 w-4" /> {t("logout")}
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-8">
         <div className="animate-fade-in">
-          <h2 className="mb-1 text-xl font-semibold">Visao Geral da Obra</h2>
+          <h2 className="mb-1 text-xl font-semibold">Visão Geral da Obra</h2>
           <p className="mb-6 text-muted-foreground">
             {obra?.address ?? "Resumo da obra selecionada."}
           </p>

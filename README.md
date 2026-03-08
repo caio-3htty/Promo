@@ -69,6 +69,28 @@ This project is built with:
 - Ativacao de usuario e tipo: `public.profiles.is_active`, `public.profiles.user_type_id`
 - Auditoria: `public.audit_log`
 
+### Multi-tenant + granular permissions (new)
+
+- Tenant isolation: `public.tenants`, `tenant_id` nas tabelas de acesso e operacao.
+- Configuracao por tenant: `public.tenant_settings` (`multi_obra_enabled`, `default_obra_id`).
+- Permissoes granulares:
+- `public.permission_catalog`
+- `public.user_permission_grants`
+- `public.user_permission_obras`
+- `public.user_type_permissions`
+- RPCs owner-control (`owner_control`):
+- `owner_publish_template_version`
+- `owner_activate_template_version`
+- `owner_restore_soft_deleted`
+- `owner_restore_field_version`
+
+### Multi-app workspace bootstrap
+
+- `apps/prumo-android-client`
+- `apps/prumo-windows-client`
+- `apps/prumo-owner-windows`
+- `packages/prumo-core`
+
 ### Main routes
 
 - `/obras`

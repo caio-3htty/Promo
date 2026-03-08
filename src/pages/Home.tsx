@@ -1,19 +1,26 @@
 import { useNavigate } from "react-router-dom";
 import { Building2, KeyRound, Layers3, LogOut, HardHat } from "lucide-react";
 
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/i18n/useI18n";
 import { canManageCadastros, roleLabelMap } from "@/lib/rbac";
 import logoPrumo from "@/assets/image.png";
 
 const Home = () => {
   const navigate = useNavigate();
-  const { role, obras, signOut } = useAuth();
+  const { role, obras, signOut, can } = useAuth();
+  const { t } = useI18n();
 
-  const showCadastros = canManageCadastros(role);
-  const showUsersAccess = role === "master";
+  const showCadastros =
+    canManageCadastros(role) ||
+    can("fornecedores.view") ||
+    can("materiais.view") ||
+    can("material_fornecedor.view");
+  const showUsersAccess = can("users.manage");
 
   return (
     <div className="min-h-screen bg-background">
@@ -22,7 +29,7 @@ const Home = () => {
           <div className="flex items-center gap-3">
             <img src={logoPrumo} alt="Prumo" className="h-10 object-contain" />
             <div>
-              <h1 className="text-xl font-bold tracking-tight">Prumo</h1>
+              <h1 className="text-xl font-bold tracking-tight">{t("appName")}</h1>
               {role && (
                 <Badge variant="secondary" className="mt-1 text-xs">
                   {roleLabelMap[role]}
@@ -30,14 +37,17 @@ const Home = () => {
               )}
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={signOut}>
-            <LogOut className="mr-1 h-4 w-4" /> Sair
-          </Button>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher />
+            <Button variant="ghost" size="sm" onClick={signOut}>
+              <LogOut className="mr-1 h-4 w-4" /> {t("logout")}
+            </Button>
+          </div>
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-8 md:px-8 animate-fade-in">
-        <h2 className="mb-4 text-lg font-semibold">Acesso Rapido</h2>
+        <h2 className="mb-4 text-lg font-semibold">{t("quickAccess")}</h2>
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Card
             className="cursor-pointer transition-all hover:border-primary/30 hover:shadow-md"
@@ -48,7 +58,7 @@ const Home = () => {
                 <Building2 className="h-5 w-5 text-white" />
               </div>
               <div>
-                <p className="font-medium">Obras</p>
+                <p className="font-medium">{t("projects")}</p>
                 <p className="text-xs text-muted-foreground">{obras.length} vinculada(s)</p>
               </div>
             </CardContent>
@@ -61,14 +71,14 @@ const Home = () => {
             >
               <CardContent className="flex items-center gap-3 p-5">
                 <div className="rounded-xl bg-emerald-600 p-2">
-                  <Layers3 className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="font-medium">Cadastros</p>
-                  <p className="text-xs text-muted-foreground">Fornecedores, materiais e vinculos</p>
-                </div>
-              </CardContent>
-            </Card>
+                <Layers3 className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-medium">{t("registries")}</p>
+                <p className="text-xs text-muted-foreground">Fornecedores, materiais e vínculos</p>
+              </div>
+            </CardContent>
+          </Card>
           )}
 
           {showUsersAccess && (
@@ -78,24 +88,24 @@ const Home = () => {
             >
               <CardContent className="flex items-center gap-3 p-5">
                 <div className="rounded-xl bg-amber-600 p-2">
-                  <KeyRound className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <p className="font-medium">Usuarios e Acessos</p>
-                  <p className="text-xs text-muted-foreground">Governanca de papel e obra</p>
-                </div>
-              </CardContent>
-            </Card>
+                <KeyRound className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <p className="font-medium">{t("usersAccess")}</p>
+                <p className="text-xs text-muted-foreground">Governança de papel e obra</p>
+              </div>
+            </CardContent>
+          </Card>
           )}
         </div>
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Obras disponiveis</CardTitle>
+            <CardTitle className="text-base">{t("availableProjects")}</CardTitle>
           </CardHeader>
           <CardContent>
             {obras.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Nenhuma obra vinculada.</p>
+              <p className="text-sm text-muted-foreground">{t("noProjectAssigned")}</p>
             ) : (
               <div className="divide-y divide-border">
                 {obras.map((obra) => (

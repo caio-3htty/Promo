@@ -1,7 +1,5 @@
 -- Suporte a usuario master e tipos de usuario da empresa
 
-ALTER TYPE public.app_role ADD VALUE IF NOT EXISTS 'master';
-
 -- Master passa em qualquer verificacao de role
 CREATE OR REPLACE FUNCTION public.has_role(_user_id uuid, _role public.app_role)
 RETURNS boolean

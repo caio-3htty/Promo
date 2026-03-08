@@ -4,7 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import Home from "./Home";
 
 const Index = () => {
-  const { user, loading, loadingAccess, hasOperationalAccess } = useAuth();
+  const { user, loading, loadingAccess, hasOperationalAccess, multiObraEnabled, defaultObraId } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -18,6 +18,12 @@ const Index = () => {
       navigate("/sem-acesso", { replace: true });
     }
   }, [user, loading, loadingAccess, hasOperationalAccess, navigate]);
+
+  useEffect(() => {
+    if (!loading && !loadingAccess && user && hasOperationalAccess && !multiObraEnabled && defaultObraId) {
+      navigate(`/dashboard/${defaultObraId}`, { replace: true });
+    }
+  }, [user, loading, loadingAccess, hasOperationalAccess, multiObraEnabled, defaultObraId, navigate]);
 
   if (loading || loadingAccess || !user) {
     return (

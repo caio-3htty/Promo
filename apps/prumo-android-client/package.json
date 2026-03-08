@@ -1,0 +1,11 @@
+﻿{
+  "name": "prumo-android-client",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Android client app (Expo)",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo run:android"
+  }
+}
+

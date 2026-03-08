@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, UserPlus } from "lucide-react";
 
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
+import { useI18n } from "@/i18n/useI18n";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import logoPrumo from "@/assets/image.png";
@@ -19,6 +21,7 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(false);
+  const { t } = useI18n();
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -60,26 +63,29 @@ const Login = () => {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="mb-8 text-center">
+          <div className="mb-3 flex justify-end">
+            <LanguageSwitcher />
+          </div>
           <img src={logoPrumo} alt="Prumo" className="mx-auto mb-4 h-16 object-contain" />
-          <p className="mt-1 text-muted-foreground">Controle Central de Obras</p>
+          <p className="mt-1 text-muted-foreground">{t("centralControl")}</p>
         </div>
 
         <Card className="border-border/50 shadow-lg">
           <CardHeader className="space-y-1 pb-4">
-            <CardTitle className="text-xl">{isSignUp ? "Criar conta" : "Entrar"}</CardTitle>
+            <CardTitle className="text-xl">{isSignUp ? t("signupTitle") : t("loginTitle")}</CardTitle>
             <CardDescription>
-              {isSignUp ? "Preencha os dados para criar sua conta" : "Use suas credenciais para acessar"}
+              {isSignUp ? t("signupSubtitle") : t("loginSubtitle")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {isSignUp && (
                 <div className="space-y-2">
-                  <Label htmlFor="fullName">Nome completo</Label>
+                  <Label htmlFor="fullName">{t("fullName")}</Label>
                   <Input
                     id="fullName"
                     type="text"
-                    placeholder="Joao Silva"
+                    placeholder="João Silva"
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
                     required
@@ -88,7 +94,7 @@ const Login = () => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">E-mail</Label>
+                <Label htmlFor="email">{t("email")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -100,7 +106,7 @@ const Login = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Senha</Label>
+                <Label htmlFor="password">{t("password")}</Label>
                 <Input
                   id="password"
                   type="password"
@@ -116,15 +122,15 @@ const Login = () => {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
-                    Aguarde...
+                    {t("loading")}
                   </span>
                 ) : isSignUp ? (
                   <span className="flex items-center gap-2">
-                    <UserPlus className="h-4 w-4" /> Criar conta
+                    <UserPlus className="h-4 w-4" /> {t("createAccount")}
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <LogIn className="h-4 w-4" /> Entrar
+                    <LogIn className="h-4 w-4" /> {t("signIn")}
                   </span>
                 )}
               </Button>
@@ -136,7 +142,7 @@ const Login = () => {
                 onClick={() => setIsSignUp((current) => !current)}
                 className="text-sm text-muted-foreground transition-colors hover:text-primary"
               >
-                {isSignUp ? "Ja tem conta? Entrar" : "Nao tem conta? Criar uma"}
+                {isSignUp ? t("hasAccount") : t("noAccount")}
               </button>
             </div>
           </CardContent>

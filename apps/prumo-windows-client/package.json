@@ -1,0 +1,11 @@
+﻿{
+  "name": "prumo-windows-client",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Windows client app (Tauri)",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build"
+  }
+}
+
