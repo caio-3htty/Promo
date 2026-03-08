@@ -1,5 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { defaultLanguage, messages, type AppLanguage, type MessageKey } from "./messages";
 import { I18nContext } from "./context";
 
@@ -14,11 +16,32 @@ const getInitialLanguage = (): AppLanguage => {
 };
 
 export const I18nProvider = ({ children }: { children: ReactNode }) => {
+  const { user, preferredLanguage, loadingAccess } = useAuth();
   const [language, setLanguageState] = useState<AppLanguage>(getInitialLanguage);
+
+  useEffect(() => {
+    if (!user || loadingAccess) {
+      return;
+    }
+
+    if (preferredLanguage !== language) {
+      setLanguageState(preferredLanguage);
+      window.localStorage.setItem(STORAGE_KEY, preferredLanguage);
+    }
+  }, [user, preferredLanguage, loadingAccess, language]);
 
   const setLanguage = (lang: AppLanguage) => {
     setLanguageState(lang);
     window.localStorage.setItem(STORAGE_KEY, lang);
+
+    if (!user) {
+      return;
+    }
+
+    void supabase
+      .from("profiles")
+      .update({ preferred_language: lang })
+      .eq("user_id", user.id);
   };
 
   const t = (key: MessageKey) => messages[language][key] ?? messages[defaultLanguage][key] ?? key;

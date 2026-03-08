@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronLeft, ClipboardList, LogOut, PackageSearch, Truck, Layers3 } from "lucide-react";
+import { ChevronLeft, ClipboardList, Layers3, LogOut, PackageSearch, Truck } from "lucide-react";
 
+import logoPrumo from "@/assets/image.png";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/i18n/useI18n";
 import { canManageCadastros, roleLabelMap } from "@/lib/rbac";
-import logoPrumo from "@/assets/image.png";
 
 const Dashboard = () => {
   const { obraId } = useParams();
@@ -21,21 +21,21 @@ const Dashboard = () => {
 
   const quickActions = useMemo(() => {
     const base = [
-      { label: "Pedidos", icon: ClipboardList, path: `/dashboard/${obraId}/pedidos` },
-      { label: "Recebimento", icon: Truck, path: `/dashboard/${obraId}/recebimento` },
-      { label: "Estoque", icon: PackageSearch, path: `/dashboard/${obraId}/estoque` },
+      { label: t("orders"), icon: ClipboardList, path: `/dashboard/${obraId}/pedidos` },
+      { label: t("receipt"), icon: Truck, path: `/dashboard/${obraId}/recebimento` },
+      { label: t("stock"), icon: PackageSearch, path: `/dashboard/${obraId}/estoque` },
     ];
 
     if (canManageCadastros(role)) {
       base.push({
-        label: "Cadastros",
+        label: t("registries"),
         icon: Layers3,
         path: "/cadastros/fornecedores",
       });
     }
 
     return base;
-  }, [obraId, role]);
+  }, [obraId, role, t]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -47,7 +47,7 @@ const Dashboard = () => {
             </Button>
             <img src={logoPrumo} alt="Prumo" className="h-8 object-contain" />
             <div>
-              <h1 className="text-lg font-bold leading-tight">{obra?.name ?? "Dashboard"}</h1>
+              <h1 className="text-lg font-bold leading-tight">{obra?.name ?? t("dashboardFallbackTitle")}</h1>
               {role && (
                 <Badge variant="secondary" className="text-xs">
                   {roleLabelMap[role]}
@@ -66,10 +66,8 @@ const Dashboard = () => {
 
       <main className="mx-auto max-w-6xl px-4 py-8 md:px-8">
         <div className="animate-fade-in">
-          <h2 className="mb-1 text-xl font-semibold">Visão Geral da Obra</h2>
-          <p className="mb-6 text-muted-foreground">
-            {obra?.address ?? "Resumo da obra selecionada."}
-          </p>
+          <h2 className="mb-1 text-xl font-semibold">{t("dashboardOverviewTitle")}</h2>
+          <p className="mb-6 text-muted-foreground">{obra?.address ?? t("dashboardOverviewSubtitle")}</p>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {quickActions.map((action, i) => (

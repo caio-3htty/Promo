@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
-import { Building2, KeyRound, Layers3, LogOut, HardHat } from "lucide-react";
+import { Building2, HardHat, KeyRound, Layers3, LogOut } from "lucide-react";
 
+import logoPrumo from "@/assets/image.png";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/i18n/useI18n";
 import { canManageCadastros, roleLabelMap } from "@/lib/rbac";
-import logoPrumo from "@/assets/image.png";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ const Home = () => {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 md:px-8 animate-fade-in">
+      <main className="mx-auto max-w-5xl animate-fade-in px-4 py-8 md:px-8">
         <h2 className="mb-4 text-lg font-semibold">{t("quickAccess")}</h2>
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Card
@@ -59,7 +59,9 @@ const Home = () => {
               </div>
               <div>
                 <p className="font-medium">{t("projects")}</p>
-                <p className="text-xs text-muted-foreground">{obras.length} vinculada(s)</p>
+                <p className="text-xs text-muted-foreground">
+                  {obras.length} {t("linkedProjectCount")}
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -71,14 +73,14 @@ const Home = () => {
             >
               <CardContent className="flex items-center gap-3 p-5">
                 <div className="rounded-xl bg-emerald-600 p-2">
-                <Layers3 className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="font-medium">{t("registries")}</p>
-                <p className="text-xs text-muted-foreground">Fornecedores, materiais e vínculos</p>
-              </div>
-            </CardContent>
-          </Card>
+                  <Layers3 className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium">{t("registries")}</p>
+                  <p className="text-xs text-muted-foreground">{t("registriesDescription")}</p>
+                </div>
+              </CardContent>
+            </Card>
           )}
 
           {showUsersAccess && (
@@ -88,14 +90,14 @@ const Home = () => {
             >
               <CardContent className="flex items-center gap-3 p-5">
                 <div className="rounded-xl bg-amber-600 p-2">
-                <KeyRound className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <p className="font-medium">{t("usersAccess")}</p>
-                <p className="text-xs text-muted-foreground">Governança de papel e obra</p>
-              </div>
-            </CardContent>
-          </Card>
+                  <KeyRound className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <p className="font-medium">{t("usersAccess")}</p>
+                  <p className="text-xs text-muted-foreground">{t("usersAccessDescription")}</p>
+                </div>
+              </CardContent>
+            </Card>
           )}
         </div>
 
@@ -118,9 +120,7 @@ const Home = () => {
                       <HardHat className="h-4 w-4 text-muted-foreground" />
                       <div>
                         <p className="text-sm font-medium">{obra.name}</p>
-                        {obra.address && (
-                          <p className="text-xs text-muted-foreground">{obra.address}</p>
-                        )}
+                        {obra.address && <p className="text-xs text-muted-foreground">{obra.address}</p>}
                       </div>
                     </div>
                     <Badge variant={obra.status === "ativa" ? "default" : "secondary"} className="text-xs">

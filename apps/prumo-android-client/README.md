@@ -1,13 +1,24 @@
-﻿# prumo-android-client
+# prumo-android-client
 
-Aplicativo Android (Expo + React Native) do cliente.
+Aplicativo Android (Expo + React Native) conectado ao Supabase do Prumo.
 
-## Objetivo
-- Login com Supabase
-- Módulos por obra (pedidos, recebimento, estoque)
-- Consumo de permissões granulares via `prumo-core`
-- Idiomas `pt-BR`, `en`, `es`
+## Escopo atual
+- Login por e-mail/senha.
+- Leitura do acesso do usuário (`profiles`, `user_roles`, `user_obras`).
+- Listagem simples de obras vinculadas.
 
-## Status
-Bootstrap inicial criado. A implementação funcional depende de configurar o projeto Expo e conectar ao backend.
+## Configuração
+1. Copie `.env.example` para `.env`.
+2. Defina `EXPO_PUBLIC_SUPABASE_URL` e `EXPO_PUBLIC_SUPABASE_ANON_KEY`.
+3. Rode:
 
+```bash
+npm install
+npm run start
+```
+
+Para rodar em Android:
+
+```bash
+npm run android
+```

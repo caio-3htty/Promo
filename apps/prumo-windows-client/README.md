@@ -1,12 +1,18 @@
-﻿# prumo-windows-client
+# prumo-windows-client
 
-Aplicativo Windows do cliente (Tauri + React).
+Cliente Windows com conexão direta ao Supabase do Prumo.
 
-## Objetivo
-- Operação desktop para obras do tenant
-- Guardas por permissão/obra
-- Idiomas compartilhados com web/android
+## Escopo atual
+- Login por e-mail/senha.
+- Leitura do estado de acesso (`profiles.is_active`, `user_roles`, `user_obras`).
+- Lista de obras vinculadas do usuário autenticado.
 
-## Status
-Bootstrap inicial criado.
+## Configuração
+1. Copie `.env.example` para `.env`.
+2. Informe URL e anon key do projeto Supabase.
+3. Rode:
 
+```bash
+npm install
+npm run dev
+```

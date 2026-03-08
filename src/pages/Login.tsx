@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LogIn, UserPlus } from "lucide-react";
+import { toast } from "sonner";
 
+import logoPrumo from "@/assets/image.png";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,8 +12,6 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useI18n } from "@/i18n/useI18n";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
-import logoPrumo from "@/assets/image.png";
 
 const Login = () => {
   const { user, loading: authLoading } = useAuth();
@@ -44,15 +44,17 @@ const Login = () => {
       });
 
       if (error) {
-        toast.error(error.message, { description: "Erro ao criar conta" });
+        toast.error(error.message, { description: t("createAccountError") });
       } else {
-        toast.success("Conta criada! Verifique seu e-mail para confirmar o cadastro.");
+        toast.success(t("accountCreatedTitle"), {
+          description: t("accountCreatedDescription"),
+        });
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        toast.error(error.message, { description: "Erro ao entrar" });
+        toast.error(error.message, { description: t("signInError") });
       }
     }
 
@@ -73,9 +75,7 @@ const Login = () => {
         <Card className="border-border/50 shadow-lg">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl">{isSignUp ? t("signupTitle") : t("loginTitle")}</CardTitle>
-            <CardDescription>
-              {isSignUp ? t("signupSubtitle") : t("loginSubtitle")}
-            </CardDescription>
+            <CardDescription>{isSignUp ? t("signupSubtitle") : t("loginSubtitle")}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -85,7 +85,7 @@ const Login = () => {
                   <Input
                     id="fullName"
                     type="text"
-                    placeholder="João Silva"
+                    placeholder={t("fullNamePlaceholder")}
                     value={fullName}
                     onChange={(event) => setFullName(event.target.value)}
                     required
@@ -98,7 +98,7 @@ const Login = () => {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="voce@empresa.com"
+                  placeholder={t("corporateEmailPlaceholder")}
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                   required
