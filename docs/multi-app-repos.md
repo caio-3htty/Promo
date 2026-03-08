@@ -1,21 +1,36 @@
 # Multi-App Split (Prumo)
 
-Este workspace agora possui 4 apps com bootstrap funcional e conexão no mesmo Supabase:
+Este workspace agora possui 4 apps conectados ao mesmo Supabase:
 
-- `apps/prumo-web-client` (app web principal continua na raiz por enquanto)
+- `apps/prumo-web-client` (Vite + React)
 - `apps/prumo-android-client` (Expo)
 - `apps/prumo-windows-client` (React + Vite)
-- `apps/prumo-owner-windows` (React + Vite, foco em RPCs owner)
-- pacote compartilhado: `packages/prumo-core`
+- `apps/prumo-owner-windows` (React + Vite, foco em recuperacao/template)
 
-## Contrato mínimo entre apps
+## Repositorios publicados
+
+- `prumo-web-client`: https://github.com/caio-3htty/prumo-web-client
+- `prumo-android-client`: https://github.com/caio-3htty/prumo-android-client
+- `prumo-windows-client`: https://github.com/caio-3htty/prumo-windows-client
+- `prumo-owner-windows`: https://github.com/caio-3htty/prumo-owner-windows
+
+## Contrato minimo entre apps
 
 - Mesmo Supabase (URL e keys por `.env`).
-- Mesma função SQL de autorização: `public.user_has_permission(...)`.
-- Mesmo catálogo de permissões.
+- Mesma funcao SQL de autorizacao: `public.user_has_permission(...)`.
+- Mesmo catalogo de permissoes.
 - Mesmo conjunto de idiomas: `pt-BR`, `en`, `es`.
 
-## Execução rápida
+## Execucao rapida
+
+### Web Client
+
+```bash
+cd apps/prumo-web-client
+cp .env.example .env
+npm install
+npm run dev
+```
 
 ### Owner Windows
 
@@ -43,10 +58,3 @@ cp .env.example .env
 npm install
 npm run start
 ```
-
-## Repositórios separados (passo sugerido)
-
-1. Criar 4 repositórios no GitHub.
-2. Copiar cada pasta para seu repositório dedicado.
-3. Publicar `packages/prumo-core` como dependência interna ou submódulo.
-4. Versionar `@prumo/core` por tag semver.
