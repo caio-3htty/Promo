@@ -471,8 +471,13 @@ AS $$
         AND p.is_active = true
         AND g.permission_key = _permission_key
         AND (
-          g.scope_type = 'tenant'
-          OR g.scope_type = 'all_obras'
+          (
+            g.scope_type IN ('tenant', 'all_obras')
+            AND (
+              _obra_id IS NULL
+              OR public.user_belongs_to_obra(_user_id, _obra_id)
+            )
+          )
           OR (
             g.scope_type = 'selected_obras'
             AND _obra_id IS NOT NULL
@@ -498,8 +503,13 @@ AS $$
         AND ut.tenant_id = _tenant_id
         AND utp.permission_key = _permission_key
         AND (
-          utp.scope_type = 'tenant'
-          OR utp.scope_type = 'all_obras'
+          (
+            utp.scope_type IN ('tenant', 'all_obras')
+            AND (
+              _obra_id IS NULL
+              OR public.user_belongs_to_obra(_user_id, _obra_id)
+            )
+          )
           OR (
             utp.scope_type = 'selected_obras'
             AND _obra_id IS NOT NULL
@@ -599,6 +609,8 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+DROP FUNCTION IF EXISTS public.write_audit_log(text, uuid, text, uuid, uuid, jsonb, jsonb);
 
 CREATE OR REPLACE FUNCTION public.write_audit_log(
   _entity_table text,
