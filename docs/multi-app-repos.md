@@ -2,16 +2,16 @@
 
 Este workspace agora possui 4 apps conectados ao mesmo Supabase:
 
-- `apps/prumo-web-client` (Vite + React)
-- `apps/prumo-android-client` (Expo)
-- `apps/prumo-windows-client` (React + Vite)
-- `apps/prumo-owner-windows` (React + Vite, foco em recuperacao/template)
+- `prumo-web-client` (Vite + React)
+- `prumo-android-client` (Expo)
+- `prumo-windows-client` (React + Vite)
+- `prumo-owner-windows` (React + Vite, foco em recuperacao/template)
 
 ## Repositorios publicados
 
 - `prumo-web-client`: https://github.com/caio-3htty/prumo-web-client
-- `prumo-android-client`: https://github.com/caio-3htty/prumo-android-client
-- `prumo-windows-client`: https://github.com/caio-3htty/prumo-windows-client
+- `Promo_APP_Android`: https://github.com/caio-3htty/Promo_APP_Android
+- `Promo_APP_Windows`: https://github.com/caio-3htty/Promo_APP_Windows
 - `prumo-owner-windows`: https://github.com/caio-3htty/prumo-owner-windows
 
 ## CI/CD configurado
@@ -41,7 +41,7 @@ Este workspace agora possui 4 apps conectados ao mesmo Supabase:
 ### Web Client
 
 ```bash
-cd apps/prumo-web-client
+cd prumo-web-client
 cp .env.example .env
 npm install
 npm run dev
@@ -50,7 +50,7 @@ npm run dev
 ### Owner Windows
 
 ```bash
-cd apps/prumo-owner-windows
+cd prumo-owner-windows
 cp .env.example .env
 npm install
 npm run dev
@@ -59,7 +59,7 @@ npm run dev
 ### Windows Client
 
 ```bash
-cd apps/prumo-windows-client
+cd prumo-windows-client
 cp .env.example .env
 npm install
 npm run dev
@@ -68,7 +68,7 @@ npm run dev
 ### Android Client
 
 ```bash
-cd apps/prumo-android-client
+cd prumo-android-client
 cp .env.example .env
 npm install
 npm run start

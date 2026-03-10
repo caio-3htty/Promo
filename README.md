@@ -86,9 +86,10 @@ This project is built with:
 
 ### Multi-app workspace bootstrap
 
-- `apps/prumo-android-client`
-- `apps/prumo-windows-client`
-- `apps/prumo-owner-windows`
+- `prumo-web-client`
+- `prumo-android-client`
+- `prumo-windows-client`
+- `prumo-owner-windows`
 - `packages/prumo-core`
 
 ### Main routes
