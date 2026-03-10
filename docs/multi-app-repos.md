@@ -29,6 +29,29 @@ Este workspace agora possui 4 apps conectados ao mesmo Supabase:
   - `ci.yml`: build web
   - `release.yml`: gera instalador NSIS (`.exe`) no GitHub Actions
 
+## Configuracao minima para funcionar
+
+### Variaveis do GitHub Actions
+
+- `prumo-web-client`
+  - `SUPABASE_URL`
+  - `SUPABASE_ANON_KEY`
+  - `SUPABASE_PUBLISHABLE_KEY`
+- `prumo-owner-windows`
+  - `SUPABASE_URL`
+  - `SUPABASE_ANON_KEY`
+- `Promo_APP_Windows`
+  - `SUPABASE_URL`
+  - `SUPABASE_ANON_KEY`
+- `Promo_APP_Android`
+  - `SUPABASE_URL`
+  - `SUPABASE_ANON_KEY`
+
+### Secrets do GitHub Actions
+
+- `Promo_APP_Android`
+  - `EXPO_TOKEN` (obrigatorio para build EAS real)
+
 ## Contrato minimo entre apps
 
 - Mesmo Supabase (URL e keys por `.env`).
@@ -72,4 +95,12 @@ cd prumo-android-client
 cp .env.example .env
 npm install
 npm run start
+```
+
+### Android EAS (preview)
+
+```bash
+# no GitHub Actions (Promo_APP_Android):
+# Workflow: android-eas-build
+# Input: profile=preview
 ```
