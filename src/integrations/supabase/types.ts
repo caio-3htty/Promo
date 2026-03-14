@@ -14,45 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      audit_log: {
-        Row: {
-          action: string
-          changed_by: string | null
-          created_at: string
-          entity_id: string | null
-          entity_table: string
-          id: string
-          new_data: Json | null
-          obra_id: string | null
-          old_data: Json | null
-          target_user_id: string | null
-        }
-        Insert: {
-          action: string
-          changed_by?: string | null
-          created_at?: string
-          entity_id?: string | null
-          entity_table: string
-          id?: string
-          new_data?: Json | null
-          obra_id?: string | null
-          old_data?: Json | null
-          target_user_id?: string | null
-        }
-        Update: {
-          action?: string
-          changed_by?: string | null
-          created_at?: string
-          entity_id?: string | null
-          entity_table?: string
-          id?: string
-          new_data?: Json | null
-          obra_id?: string | null
-          old_data?: Json | null
-          target_user_id?: string | null
-        }
-        Relationships: []
-      }
       estoque_obra_material: {
         Row: {
           atualizado_em: string
@@ -337,45 +298,28 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
-          email: string | null
           full_name: string
           id: string
-          is_active: boolean
           updated_at: string
-          user_type_id: string | null
           user_id: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
-          email?: string | null
           full_name?: string
           id?: string
-          is_active?: boolean
           updated_at?: string
-          user_type_id?: string | null
           user_id: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
-          email?: string | null
           full_name?: string
           id?: string
-          is_active?: boolean
           updated_at?: string
-          user_type_id?: string | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "profiles_user_type_id_fkey"
-            columns: ["user_type_id"]
-            isOneToOne: false
-            referencedRelation: "user_types"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       user_obras: {
         Row: {
@@ -424,68 +368,16 @@ export type Database = {
         }
         Relationships: []
       }
-      user_types: {
-        Row: {
-          base_role: Database["public"]["Enums"]["app_role"]
-          created_at: string
-          created_by: string | null
-          description: string | null
-          id: string
-          is_active: boolean
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          base_role: Database["public"]["Enums"]["app_role"]
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          base_role?: Database["public"]["Enums"]["app_role"]
-          created_at?: string
-          created_by?: string | null
-          description?: string | null
-          id?: string
-          is_active?: boolean
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      current_role: {
-        Args: { _user_id: string }
-        Returns: Database["public"]["Enums"]["app_role"] | null
-      }
-      has_any_role: {
-        Args: {
-          _roles: Database["public"]["Enums"]["app_role"][]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      has_work_access: {
-        Args: { _user_id: string }
-        Returns: boolean
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
-        Returns: boolean
-      }
-      is_user_active: {
-        Args: { _user_id: string }
         Returns: boolean
       }
       user_belongs_to_obra: {
@@ -494,7 +386,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "master" | "gestor" | "engenheiro" | "operacional" | "almoxarife"
+      app_role: "gestor" | "engenheiro" | "operacional" | "almoxarife"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -622,7 +514,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["master", "gestor", "engenheiro", "operacional", "almoxarife"],
+      app_role: ["gestor", "engenheiro", "operacional", "almoxarife"],
     },
   },
 } as const
