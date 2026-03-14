@@ -24,12 +24,32 @@ npm --prefix promo_APP_Linux ci
 npm --prefix promo_APP_Linux run desktop:prepare:web
 npm --prefix promo_APP_Linux run desktop:build:linux
 ```
+Observacao:
+- Em Windows local, use apenas `desktop:prepare:web`.
+- Empacotamento oficial `.AppImage/.deb` ocorre no CI Ubuntu.
 
-### Android shell (`promo_APP_Android`)
+### Android nativo (`promo_APP_Android`)
 ```bash
-npm --prefix promo_APP_Android ci
-npm --prefix promo_APP_Android run android:sync
-npm --prefix promo_APP_Android run android:build
+# Linux/macOS
+cd promo_APP_Android
+./gradlew lintDebug testDebugUnitTest assembleDebug
+
+# Windows
+cd promo_APP_Android
+gradlew.bat lintDebug testDebugUnitTest assembleDebug
+```
+
+Bootstrap local Android:
+```bash
+# JDK
+set JAVA_HOME=C:\Users\seu_usuario\.jdks\jdk-21.0.10+7
+
+# SDK (alternativa 1)
+set ANDROID_HOME=C:\Users\seu_usuario\AppData\Local\Android\Sdk
+
+# SDK (alternativa 2)
+# promo_APP_Android/local.properties
+# sdk.dir=C:\\Users\\seu_usuario\\AppData\\Local\\Android\\Sdk
 ```
 
 ### Owner Windows (`promo_APP_OwnerWindows`)
@@ -40,12 +60,15 @@ npm --prefix promo_APP_OwnerWindows run build
 
 ## Operacoes da raiz (workspace)
 ```bash
+npm run env:doctor
 npm run supabase:test
 npm run smoke:rbac
 npm run alerts:dispatch:dry
 npm run alerts:dispatch
 npm run windows:build
 npm run linux:build
+npm run android:doctor
+npm run android:build
 ```
 
 ## Variaveis de ambiente de smoke

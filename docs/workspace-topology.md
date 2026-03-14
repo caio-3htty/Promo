@@ -6,13 +6,14 @@
 - `promo_APP_OwnerWindows`: app desktop owner-control (Electron + Vite).
 - `promo_APP_Windows`: shell desktop do web (Electron) dedicado para Windows.
 - `promo_APP_Linux`: shell desktop do web (Electron) dedicado para Linux.
-- `promo_APP_Android`: shell Android do web (Capacitor).
+- `promo_APP_Android`: app Android nativo (Kotlin + Gradle).
 - `packages/prumo-core`: contratos compartilhados no workspace.
 - `supabase`: migrations, funcoes Edge e configuracao.
 
 ## Fonte de verdade da interface
 - UI e regras principais residem no `promo_APP_Web`.
-- `promo_APP_Windows`, `promo_APP_Linux` e `promo_APP_Android` embutem o build `embedded` do web.
+- `promo_APP_Windows` e `promo_APP_Linux` embutem o build `embedded` do web.
+- `promo_APP_Android` segue stack nativa e integra backend Supabase diretamente.
 
 ## CI/CD
 - Cada `promo_APP_*` possui seu proprio workflow de CI/release no respectivo repositorio.
