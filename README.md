@@ -1,11 +1,15 @@
-# Prumo Workspace
+# Promo Workspace
 
-Workspace de orquestracao do ecossistema Prumo.
+Workspace de orquestracao do ecossistema Promo.
 
-## Leitura rapida
-- Topologia, repositorios e responsabilidades: `docs/workspace-topology.md`
-- Runbook de build/release/smoke: `docs/ops-runbook.md`
-- Smoke funcional de homologacao: `docs/smoke-checklist-homologacao.md`
+## Mapa oficial de repositorios
+| Nome local | Repositorio GitHub | Finalidade |
+| --- | --- | --- |
+| `Promo` | `Promo` | Workspace, docs, scripts de operacao e assets compartilhados |
+| `promo_APP_Web` | `promo_APP_Web` | App web principal |
+| `promo_APP_Android` | `promo_APP_Android` | Shell Android (Capacitor) |
+| `promo_APP_Windows` | `promo_APP_Windows` | Shell desktop (Electron) para Windows e Linux |
+| `promo_APP_OwnerWindows` | `promo_APP_OwnerWindows` | App owner-control desktop |
 
 ## Requisitos
 - Node.js 20+
@@ -15,19 +19,12 @@ Workspace de orquestracao do ecossistema Prumo.
 nvm use
 ```
 
-## Comandos de orquestracao
+## Fluxo operacional da raiz
 ```bash
-npm run web:dev
-npm run web:lint
-npm run web:test
-npm run web:build
-
-npm run owner:build
-npm run windows:build
-npm run android:doctor
-
 npm run supabase:test
 npm run smoke:rbac
+npm run alerts:dispatch:dry
+npm run linux:build
 ```
 
 ## Limpeza
@@ -35,3 +32,8 @@ npm run smoke:rbac
 npm run clean
 npm run clean:all
 ```
+
+## Leituras recomendadas
+- `docs/workspace-topology.md`
+- `docs/ops-runbook.md`
+- `docs/web-release-checklist.md`

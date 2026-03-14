@@ -1,49 +1,44 @@
-# Ops Runbook (Prumo)
+# Ops Runbook (Promo)
 
-## Build e validacao minima
+## Build e validacao minima por app
 
-### Web (`prumo-web-client`)
+### Web (`promo_APP_Web`)
 ```bash
-npm --prefix prumo-web-client ci
-npm --prefix prumo-web-client run build
-npm --prefix prumo-web-client run build:embedded
+npm --prefix promo_APP_Web ci
+npm --prefix promo_APP_Web run lint
+npm --prefix promo_APP_Web run test
+npm --prefix promo_APP_Web run build
+npm --prefix promo_APP_Web run build:embedded
 ```
 
-### Windows client (`prumo-windows-client`)
+### Desktop shell Windows/Linux (`promo_APP_Windows`)
 ```bash
-npm --prefix prumo-windows-client ci
-npm --prefix prumo-windows-client run desktop:prepare:web
-npm --prefix prumo-windows-client run desktop:build:win
+npm --prefix promo_APP_Windows ci
+npm --prefix promo_APP_Windows run desktop:prepare:web
+npm --prefix promo_APP_Windows run desktop:build:win
+npm --prefix promo_APP_Windows run desktop:build:linux
 ```
 
-Linux packaging:
+### Android shell (`promo_APP_Android`)
 ```bash
-npm --prefix prumo-windows-client run desktop:build:linux
+npm --prefix promo_APP_Android ci
+npm --prefix promo_APP_Android run android:sync
+npm --prefix promo_APP_Android run android:build
 ```
 
-### Android client (`prumo-android-client`)
+### Owner Windows (`promo_APP_OwnerWindows`)
 ```bash
-npm --prefix prumo-android-client ci
-npm --prefix prumo-android-client run android:sync
-npm --prefix prumo-android-client run android:build
+npm --prefix promo_APP_OwnerWindows ci
+npm --prefix promo_APP_OwnerWindows run build
 ```
 
-### Owner Windows (`prumo-owner-windows`)
-```bash
-npm --prefix prumo-owner-windows ci
-npm --prefix prumo-owner-windows run build
-```
-
-## Smoke e Supabase
+## Operacoes da raiz (workspace)
 ```bash
 npm run supabase:test
 npm run smoke:rbac
-```
-
-## Limpeza
-```bash
-npm run clean
-npm run clean:all
+npm run alerts:dispatch:dry
+npm run alerts:dispatch
+npm run linux:build
 ```
 
 ## Variaveis de ambiente de smoke
@@ -52,6 +47,9 @@ npm run clean:all
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_TENANT_ID`
 - credenciais `SMOKE_*` por papel
+- `RESEND_API_KEY` (para disparo real de e-mail critico)
+- `RESEND_FROM_EMAIL`
+- `CRITICAL_ALERT_FALLBACK_EMAIL` (opcional)
 
 ## Politica de commit
 - Nao commitar build artifacts e caches.

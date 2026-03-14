@@ -1,0 +1,69 @@
+﻿{
+  "name": "promo-app-linux-client",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "author": {
+    "name": "Prumo Team",
+    "email": "noreply@prumo.app"
+  },
+  "main": "electron/main.cjs",
+  "description": "Linux desktop app shell (embedded web)",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "clean": "node scripts/clean.mjs",
+    "build:web:embedded": "node scripts/build-web-embedded.mjs",
+    "sync:web:dist": "node scripts/sync-web-dist.mjs",
+    "desktop:prepare:web": "npm run build:web:embedded && npm run sync:web:dist",
+    "desktop:dev": "concurrently -k \"node scripts/run-web-dev.mjs\" \"wait-on tcp:8080 && electron .\"",
+    "desktop:build:linux": "npm run desktop:prepare:web && electron-builder --linux AppImage deb --publish never"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.98.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "electron": "^37.2.6",
+    "electron-builder": "^26.0.12",
+    "@types/react": "^18.3.23",
+    "@types/react-dom": "^18.3.7",
+    "@vitejs/plugin-react-swc": "^3.11.0",
+    "typescript": "^5.8.3",
+    "vite": "^5.4.19",
+    "wait-on": "^8.0.5"
+  },
+  "build": {
+    "appId": "com.promo.linux.client",
+    "productName": "Promo App Linux",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "web-dist",
+        "to": "web-dist"
+      }
+    ],
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "artifactName": "Promo_APP_Linux-${version}-${arch}.${ext}",
+      "category": "Utility",
+      "maintainer": "Prumo Team <noreply@prumo.app>"
+    }
+  }
+}
+

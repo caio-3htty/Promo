@@ -1,0 +1,38 @@
+name: alerts-dispatch-dry
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"
+
+jobs:
+  dry-run:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_TENANT_ID: ${{ secrets.SUPABASE_TENANT_ID }}
+      CRITICAL_ALERT_FALLBACK_EMAIL: ${{ secrets.CRITICAL_ALERT_FALLBACK_EMAIL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate required secrets
+        id: validate
+        shell: bash
+        run: |
+          if [ -z "$SUPABASE_PROJECT_REF" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Missing SUPABASE_PROJECT_REF and/or SUPABASE_SERVICE_ROLE_KEY. Skipping."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run alerts dispatch dry-run
+        if: steps.validate.outputs.ready == 'true'
+        run: node scripts/process-critical-alerts.mjs --dry-run

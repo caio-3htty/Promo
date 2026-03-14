@@ -1,0 +1,46 @@
+﻿name: desktop-ci
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - windows-latest
+          - ubuntu-latest
+    env:
+      PROMO_APP_WEB_DIR: ./promo_APP_Web
+      VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Checkout web client
+        uses: actions/checkout@v4
+        with:
+          repository: caio-3htty/promo_APP_Web
+          path: promo_APP_Web
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install web dependencies
+        run: npm --prefix ./promo_APP_Web ci
+
+      - name: Prepare embedded web bundle
+        run: npm run desktop:prepare:web
+

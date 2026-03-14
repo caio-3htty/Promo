@@ -1,0 +1,66 @@
+name: smoke-rbac
+
+on:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_TENANT_ID: ${{ secrets.SUPABASE_TENANT_ID }}
+      SMOKE_GESTOR_EMAIL: ${{ secrets.SMOKE_GESTOR_EMAIL }}
+      SMOKE_GESTOR_PASSWORD: ${{ secrets.SMOKE_GESTOR_PASSWORD }}
+      SMOKE_OPERACIONAL_EMAIL: ${{ secrets.SMOKE_OPERACIONAL_EMAIL }}
+      SMOKE_OPERACIONAL_PASSWORD: ${{ secrets.SMOKE_OPERACIONAL_PASSWORD }}
+      SMOKE_ENGENHEIRO_EMAIL: ${{ secrets.SMOKE_ENGENHEIRO_EMAIL }}
+      SMOKE_ENGENHEIRO_PASSWORD: ${{ secrets.SMOKE_ENGENHEIRO_PASSWORD }}
+      SMOKE_ALMOXARIFE_EMAIL: ${{ secrets.SMOKE_ALMOXARIFE_EMAIL }}
+      SMOKE_ALMOXARIFE_PASSWORD: ${{ secrets.SMOKE_ALMOXARIFE_PASSWORD }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate required secrets
+        id: validate
+        shell: bash
+        run: |
+          missing=0
+          required=(
+            SUPABASE_PROJECT_REF
+            SUPABASE_SERVICE_ROLE_KEY
+            SUPABASE_ANON_KEY
+            SUPABASE_TENANT_ID
+            SMOKE_GESTOR_EMAIL
+            SMOKE_GESTOR_PASSWORD
+            SMOKE_OPERACIONAL_EMAIL
+            SMOKE_OPERACIONAL_PASSWORD
+            SMOKE_ENGENHEIRO_EMAIL
+            SMOKE_ENGENHEIRO_PASSWORD
+            SMOKE_ALMOXARIFE_EMAIL
+            SMOKE_ALMOXARIFE_PASSWORD
+          )
+          for key in "${required[@]}"; do
+            if [ -z "${!key}" ]; then
+              echo "Missing $key"
+              missing=1
+            fi
+          done
+          if [ "$missing" -eq 1 ]; then
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Required secrets missing. Skipping smoke."
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run smoke RBAC
+        if: steps.validate.outputs.ready == 'true'
+        run: npm run smoke:rbac

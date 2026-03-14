@@ -29,6 +29,8 @@ dist-ssr
 
 .vercel
 supabase/.temp/
-prumo-android-client/
-prumo-windows-client/
+promo_APP_Web/
+promo_APP_Android/
+promo_APP_Windows/
+promo_APP_OwnerWindows/
 Promo-main/

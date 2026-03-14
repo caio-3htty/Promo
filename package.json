@@ -9,17 +9,20 @@
     "npm": ">=10"
   },
   "scripts": {
-    "web:dev": "npm --prefix prumo-web-client run dev",
-    "web:lint": "npm --prefix prumo-web-client run lint",
-    "web:test": "npm --prefix prumo-web-client run test",
-    "web:build": "npm --prefix prumo-web-client run build",
+    "web:dev": "npm --prefix promo_APP_Web run dev",
+    "web:lint": "npm --prefix promo_APP_Web run lint",
+    "web:test": "npm --prefix promo_APP_Web run test",
+    "web:build": "npm --prefix promo_APP_Web run build",
     "clean": "node scripts/clean-root.mjs",
-    "clean:all": "npm run clean && npm --prefix prumo-web-client run clean && npm --prefix prumo-owner-windows run clean && npm --prefix prumo-windows-client run clean && npm --prefix prumo-android-client run clean",
-    "owner:build": "npm --prefix prumo-owner-windows run build",
-    "windows:build": "npm --prefix prumo-windows-client run build",
-    "android:typecheck": "npm --prefix prumo-android-client run typecheck --if-present",
-    "android:doctor": "npm --prefix prumo-android-client run doctor --if-present",
+    "clean:all": "npm run clean && npm --prefix promo_APP_Web run clean && npm --prefix promo_APP_OwnerWindows run clean && npm --prefix promo_APP_Windows run clean && npm --prefix promo_APP_Android run clean",
+    "owner:build": "npm --prefix promo_APP_OwnerWindows run build",
+    "windows:build": "npm --prefix promo_APP_Windows run build",
+    "linux:build": "npm --prefix promo_APP_Windows run desktop:build:linux",
+    "android:typecheck": "npm --prefix promo_APP_Android run typecheck --if-present",
+    "android:doctor": "npm --prefix promo_APP_Android run doctor --if-present",
     "supabase:test": "node scripts/test-supabase.mjs",
-    "smoke:rbac": "node scripts/smoke-rbac-provision.mjs"
+    "smoke:rbac": "node scripts/smoke-rbac-provision.mjs",
+    "alerts:dispatch": "node scripts/process-critical-alerts.mjs",
+    "alerts:dispatch:dry": "node scripts/process-critical-alerts.mjs --dry-run"
   }
 }

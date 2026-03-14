@@ -1,47 +1,117 @@
-﻿#!/usr/bin/env node
+#!/usr/bin/env node
 
-const PROJECT_REF = process.env.SUPABASE_PROJECT_REF || "awkvzbpnihtgceqdwisc";
-const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const ANON_KEY = process.env.SUPABASE_ANON_KEY;
-const TENANT_ID = process.env.SUPABASE_TENANT_ID || "11111111-1111-1111-1111-111111111111";
+import fs from "node:fs";
+import path from "node:path";
 
-if (!SERVICE_ROLE_KEY || !ANON_KEY) {
-  console.error("Missing SUPABASE_SERVICE_ROLE_KEY or SUPABASE_ANON_KEY");
+function loadDotEnv(filePath) {
+  if (!fs.existsSync(filePath)) return;
+
+  const content = fs.readFileSync(filePath, "utf8");
+  for (const rawLine of content.split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith("#")) continue;
+
+    const equalsIndex = line.indexOf("=");
+    if (equalsIndex <= 0) continue;
+
+    const key = line.slice(0, equalsIndex).trim();
+    let value = line.slice(equalsIndex + 1).trim();
+    if (
+      (value.startsWith("\"") && value.endsWith("\"")) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+
+    if (!process.env[key]) process.env[key] = value;
+  }
+}
+
+loadDotEnv(path.resolve(process.cwd(), ".env"));
+const REQUIRED_KEYS = [
+  "SUPABASE_PROJECT_REF",
+  "SUPABASE_SERVICE_ROLE_KEY",
+  "SUPABASE_ANON_KEY",
+  "SUPABASE_TENANT_ID",
+  "SMOKE_GESTOR_EMAIL",
+  "SMOKE_GESTOR_PASSWORD",
+  "SMOKE_OPERACIONAL_EMAIL",
+  "SMOKE_OPERACIONAL_PASSWORD",
+  "SMOKE_ENGENHEIRO_EMAIL",
+  "SMOKE_ENGENHEIRO_PASSWORD",
+  "SMOKE_ALMOXARIFE_EMAIL",
+  "SMOKE_ALMOXARIFE_PASSWORD",
+];
+
+const missingKeys = REQUIRED_KEYS.filter((key) => !process.env[key]);
+if (missingKeys.length > 0) {
+  console.error(`Missing required environment variables: ${missingKeys.join(", ")}`);
   process.exit(1);
 }
 
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const ANON_KEY = process.env.SUPABASE_ANON_KEY;
+const TENANT_ID = process.env.SUPABASE_TENANT_ID;
 const BASE_URL = `https://${PROJECT_REF}.supabase.co`;
 
-const testUsers = [
-  {
-    role: "gestor",
-    email: "caiofrossoni+gestor@gmail.com",
-    password: "Prumo@2026!Gestor",
-    fullName: "Gestor Teste",
-    scope: "AB",
-  },
-  {
-    role: "operacional",
-    email: "caiofrossoni+operacional@gmail.com",
-    password: "Prumo@2026!Oper",
-    fullName: "Operacional Teste",
-    scope: "A",
-  },
-  {
-    role: "engenheiro",
-    email: "caiofrossoni+engenheiro@gmail.com",
-    password: "Prumo@2026!Eng",
-    fullName: "Engenheiro Teste",
-    scope: "A",
-  },
-  {
-    role: "almoxarife",
-    email: "caiofrossoni+almoxarife@gmail.com",
-    password: "Prumo@2026!Almo",
-    fullName: "Almoxarife Teste",
-    scope: "B",
-  },
-];
+const buildSmokeUser = ({ role, defaultScope }) => {
+  const prefix = `SMOKE_${role.toUpperCase()}`;
+  const scope = process.env[`${prefix}_SCOPE`] || defaultScope;
+
+  if (!["A", "B", "AB"].includes(scope)) {
+    throw new Error(`Invalid scope for ${prefix}_SCOPE. Expected A, B or AB.`);
+  }
+
+  return {
+    role,
+    email: process.env[`${prefix}_EMAIL`],
+    password: process.env[`${prefix}_PASSWORD`],
+    fullName: process.env[`${prefix}_FULL_NAME`] || `${role} smoke`,
+    scope,
+  };
+};
+
+const parseTestUsers = () => {
+  if (process.env.SMOKE_USERS_JSON) {
+    try {
+      const parsed = JSON.parse(process.env.SMOKE_USERS_JSON);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    } catch (error) {
+      throw new Error(`Invalid SMOKE_USERS_JSON: ${error.message}`);
+    }
+  }
+
+  const requiredUsers = [
+    { role: "gestor", scope: process.env.SMOKE_GESTOR_SCOPE || "AB" },
+    { role: "operacional", scope: process.env.SMOKE_OPERACIONAL_SCOPE || "A" },
+    { role: "engenheiro", scope: process.env.SMOKE_ENGENHEIRO_SCOPE || "A" },
+    { role: "almoxarife", scope: process.env.SMOKE_ALMOXARIFE_SCOPE || "B" },
+  ];
+
+  return requiredUsers.map((item) => {
+    const upper = item.role.toUpperCase();
+    const email = process.env[`SMOKE_${upper}_EMAIL`];
+    const password = process.env[`SMOKE_${upper}_PASSWORD`];
+    const fullName = process.env[`SMOKE_${upper}_FULL_NAME`] || `${item.role} smoke`;
+
+    if (!email || !password) {
+      throw new Error(`Missing credentials env for role ${item.role}: SMOKE_${upper}_EMAIL and SMOKE_${upper}_PASSWORD`);
+    }
+
+    return {
+      role: item.role,
+      email,
+      password,
+      fullName,
+      scope: item.scope,
+    };
+  });
+};
+
+const testUsers = parseTestUsers();
 
 const jsonHeaders = (token, extra = {}) => ({
   apikey: token,
@@ -127,6 +197,18 @@ async function restUser(path, accessToken, { method = "GET", body, prefer } = {}
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
+  });
+}
+
+async function rpcUser(name, accessToken, args = {}) {
+  const headers = jsonHeaders(ANON_KEY, {
+    Authorization: `Bearer ${accessToken}`,
+  });
+
+  return requestJson(`${BASE_URL}/rest/v1/rpc/${name}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(args),
   });
 }
 
@@ -249,7 +331,7 @@ async function main() {
     }
   };
 
-  await check("Gestor lê pedidos das duas obras", async () => {
+  await check("Gestor lÃƒÂª pedidos das duas obras", async () => {
     const token = sessions.gestor.access_token;
     const a = await restUser(
       `pedidos_compra?select=id,obra_id&obra_id=eq.${encodeFilterValue(obraA.id)}&deleted_at=is.null`,
@@ -267,7 +349,7 @@ async function main() {
   let created = {};
   const tag = Date.now();
 
-  await check("Operacional cria fornecedor/material/vínculo/pedido na obra A", async () => {
+  await check("Operacional cria fornecedor/material/vÃƒÂ­nculo/pedido na obra A", async () => {
     const token = sessions.operacional.access_token;
     const cnpj = String(tag).slice(-14).padStart(14, "0");
 
@@ -338,7 +420,122 @@ async function main() {
     return created;
   });
 
-  await check("Operacional não lê pedidos da obra B", async () => {
+  await check("Operacional define prazos por etapa na obra A", async () => {
+    if (!created.pedidoAId) throw new Error("pedidoAId missing");
+    const token = sessions.operacional.access_token;
+
+    const now = new Date();
+    const in2h = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
+    const in6h = new Date(now.getTime() + 6 * 60 * 60 * 1000).toISOString();
+    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+    const in36h = new Date(now.getTime() + 36 * 60 * 60 * 1000).toISOString();
+
+    const res = await restUser("pedido_prazos_etapa?on_conflict=pedido_id", token, {
+      method: "POST",
+      prefer: "resolution=merge-duplicates,return=representation",
+      body: {
+        tenant_id: TENANT_ID,
+        obra_id: obraA.id,
+        pedido_id: created.pedidoAId,
+        prazo_aprovacao_mrv_previsto: in2h,
+        prazo_aprovacao_fornecedor_previsto: in6h,
+        prazo_producao_previsto: in24h,
+        prazo_entrega_previsto: in36h,
+        requer_frete_munk: true,
+        prazo_agendar_frete_em: in24h,
+      },
+    });
+
+    if (!res.ok) throw new Error(`prazos upsert failed: ${res.status} ${JSON.stringify(res.data)}`);
+    if (!Array.isArray(res.data) || res.data.length === 0) throw new Error("prazos upsert sem retorno");
+    return { id: res.data[0].id, pedido_id: res.data[0].pedido_id };
+  });
+
+  await check("Operacional registra orcamento material da obra A", async () => {
+    if (!created.materialId) throw new Error("materialId missing");
+    const token = sessions.operacional.access_token;
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    const res = await restUser(
+      "orcamento_material_obra_periodo?on_conflict=tenant_id,obra_id,material_id,periodo_inicio,periodo_fim",
+      token,
+      {
+        method: "POST",
+        prefer: "resolution=merge-duplicates,return=representation",
+        body: {
+          tenant_id: TENANT_ID,
+          obra_id: obraA.id,
+          material_id: created.materialId,
+          periodo_inicio: start.toISOString().slice(0, 10),
+          periodo_fim: end.toISOString().slice(0, 10),
+          valor_orcado: 1000,
+          valor_realizado: 250,
+        },
+      },
+    );
+
+    if (!res.ok) throw new Error(`orcamento upsert failed: ${res.status} ${JSON.stringify(res.data)}`);
+    if (!Array.isArray(res.data) || res.data.length === 0) throw new Error("orcamento upsert sem retorno");
+    return { id: res.data[0].id, valor_orcado: res.data[0].valor_orcado };
+  });
+
+  await check("Operacional registra incidente de substituicao na obra A", async () => {
+    if (!created.pedidoAId || !created.materialId) throw new Error("pedido/material missing");
+    const token = sessions.operacional.access_token;
+    const res = await restUser("incidentes_substituicao_material", token, {
+      method: "POST",
+      prefer: "return=representation",
+      body: {
+        tenant_id: TENANT_ID,
+        obra_id: obraA.id,
+        pedido_id: created.pedidoAId,
+        material_planejado_id: created.materialId,
+        material_substituto_id: created.materialId,
+        motivo: "Smoke test substituicao controlada",
+        quantidade_planejada: 2,
+        quantidade_substituto: 2,
+        custo_planejado_unit: 15.5,
+        custo_substituto_unit: 16.5,
+        necessita_reposicao: false,
+      },
+    });
+
+    if (!res.ok) throw new Error(`incidente create failed: ${res.status} ${JSON.stringify(res.data)}`);
+    if (!Array.isArray(res.data) || res.data.length !== 1) throw new Error("incidente sem retorno unico");
+    return { id: res.data[0].id, status: res.data[0].status };
+  });
+
+  await check("Engenheiro nao cria incidente de substituicao", async () => {
+    const token = sessions.engenheiro.access_token;
+    const res = await restUser("incidentes_substituicao_material", token, {
+      method: "POST",
+      prefer: "return=representation",
+      body: {
+        tenant_id: TENANT_ID,
+        obra_id: obraA.id,
+        material_planejado_id: created.materialId,
+        material_substituto_id: created.materialId,
+        motivo: "Teste sem permissao",
+        quantidade_planejada: 1,
+        quantidade_substituto: 1,
+        custo_planejado_unit: 10,
+        custo_substituto_unit: 10,
+        necessita_reposicao: false,
+      },
+    });
+
+    if (!res.ok) {
+      return { blockedBy: `error:${res.status}` };
+    }
+    if (Array.isArray(res.data) && res.data.length === 0) {
+      return { blockedBy: "rls/no rows" };
+    }
+    throw new Error("engenheiro conseguiu criar incidente");
+  });
+
+  await check("Operacional nÃƒÂ£o lÃƒÂª pedidos da obra B", async () => {
     const token = sessions.operacional.access_token;
     const res = await restUser(
       `pedidos_compra?select=id&obra_id=eq.${encodeFilterValue(obraB.id)}&deleted_at=is.null`,
@@ -349,7 +546,7 @@ async function main() {
     return { rows: res.data.length };
   });
 
-  await check("Engenheiro aprova pedido e define código", async () => {
+  await check("Engenheiro aprova pedido e define cÃƒÂ³digo", async () => {
     if (!created.pedidoAId) throw new Error("pedidoAId missing");
     const token = sessions.engenheiro.access_token;
 
@@ -370,7 +567,7 @@ async function main() {
     return { id: updateRes.data[0].id, status: updateRes.data[0].status, codigo: updateRes.data[0].codigo_compra };
   });
 
-  await check("Engenheiro não altera quantidade do pedido", async () => {
+  await check("Engenheiro nÃƒÂ£o altera quantidade do pedido", async () => {
     const token = sessions.engenheiro.access_token;
     const patchRes = await restUser(`pedidos_compra?id=eq.${encodeFilterValue(created.pedidoAId)}`, token, {
       method: "PATCH",
@@ -391,7 +588,42 @@ async function main() {
     throw new Error("engenheiro conseguiu alterar quantidade");
   });
 
-  await check("Almoxarife não lê pedidos da obra A", async () => {
+  await check("Preparar alerta para ACK na obra A", async () => {
+    const res = await restService("notificacoes", {
+      method: "POST",
+      prefer: "return=representation",
+      body: {
+        tenant_id: TENANT_ID,
+        obra_id: obraA.id,
+        pedido_id: created.pedidoAId,
+        tipo: "smoke_ack",
+        severidade: "warning",
+        titulo: `Smoke ACK ${tag}`,
+        mensagem: "Teste de reconhecimento de alerta no smoke RBAC",
+        status: "aberta",
+        proxima_repeticao_em: new Date(Date.now() + 3600000).toISOString(),
+        escalar_em: new Date(Date.now() + 3600000).toISOString(),
+        email_critico_em: new Date(Date.now() + 4 * 3600000).toISOString(),
+      },
+    });
+
+    if (!res.ok) throw new Error(`create notificacao failed: ${res.status} ${JSON.stringify(res.data)}`);
+    created.notificationAId = res.data[0].id;
+    return { id: created.notificationAId };
+  });
+
+  await check("Engenheiro reconhece alerta da obra A", async () => {
+    if (!created.notificationAId) throw new Error("notificationAId missing");
+    const token = sessions.engenheiro.access_token;
+    const res = await rpcUser("ack_notificacao", token, {
+      _notificacao_id: created.notificationAId,
+      _nota: "OK smoke",
+    });
+    if (!res.ok) throw new Error(`ack failed: ${res.status} ${JSON.stringify(res.data)}`);
+    return { id: res.data.id, status: res.data.status, ack_em: res.data.ack_em };
+  });
+
+  await check("Almoxarife nÃƒÂ£o lÃƒÂª pedidos da obra A", async () => {
     const token = sessions.almoxarife.access_token;
     const res = await restUser(
       `pedidos_compra?select=id&obra_id=eq.${encodeFilterValue(obraA.id)}&deleted_at=is.null`,
@@ -400,6 +632,21 @@ async function main() {
     if (!res.ok) throw new Error(`query failed ${res.status}`);
     if ((res.data || []).length > 0) throw new Error(`unexpected rows: ${res.data.length}`);
     return { rows: res.data.length };
+  });
+
+  await check("Almoxarife nao reconhece alerta da obra A", async () => {
+    if (!created.notificationAId) throw new Error("notificationAId missing");
+    const token = sessions.almoxarife.access_token;
+    const res = await rpcUser("ack_notificacao", token, {
+      _notificacao_id: created.notificationAId,
+      _nota: "nao deve ack",
+    });
+
+    if (!res.ok) {
+      return { blockedBy: `error:${res.status}` };
+    }
+
+    throw new Error("almoxarife conseguiu ack de alerta sem permissao");
   });
 
   let pedidoBId = null;
@@ -441,7 +688,7 @@ async function main() {
 
     if (!patchRes.ok) throw new Error(`entrega failed: ${patchRes.status} ${JSON.stringify(patchRes.data)}`);
     if (!Array.isArray(patchRes.data) || patchRes.data.length !== 1) {
-      throw new Error("almoxarife não conseguiu atualizar pedido da obra B");
+      throw new Error("almoxarife nÃƒÂ£o conseguiu atualizar pedido da obra B");
     }
 
     return { id: patchRes.data[0].id, status: patchRes.data[0].status };
@@ -504,3 +751,5 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+
+
