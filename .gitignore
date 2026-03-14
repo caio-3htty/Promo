@@ -10,6 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+.cache
 .env
 .env.*
 !.env.example
@@ -30,3 +31,4 @@ dist-ssr
 supabase/.temp/
 prumo-android-client/
 prumo-windows-client/
+Promo-main/

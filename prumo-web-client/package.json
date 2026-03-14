@@ -11,6 +11,7 @@
     "build": "vite build",
     "build:embedded": "vite build --mode embedded",
     "build:dev": "vite build --mode development",
+    "clean": "node scripts/clean.mjs",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
