@@ -1,4 +1,4 @@
-﻿# prumo-core
+# prumo-core
 
 Pacote compartilhado entre web/android/windows/owner.
 
