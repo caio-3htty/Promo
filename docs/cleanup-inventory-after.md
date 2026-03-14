@@ -1,9 +1,9 @@
 ﻿# Cleanup Inventory (After)
 
-Generated at: 2026-03-14 10:25:56 -03:00
+Generated at: 2026-03-14 10:28:40 -03:00
 
 ## Root Directory Sizes (MB)
-- .git: 2.06
+- .git: 2.07
 - prumo-android-client: 2.01
 - prumo-web-client: 1.23
 - prumo-windows-client: 0.32
@@ -16,25 +16,19 @@ Generated at: 2026-03-14 10:25:56 -03:00
 ## Git Status: C:\Users\caio.rossoni\Downloads\Promo
 - ## codex/cleanup-irrelevantes
 -  M .env.example
--  M .gitignore
 - D  .vercelignore
--  M README.md
 - D  bun.lockb
 - D  components.json
--  D docs/multi-app-repos.md
 - D  eslint.config.js
 - D  index.html
 - D  package-lock.json
--  M package.json
 - D  postcss.config.js
--  M prumo-owner-windows/package.json
 -  M prumo-web-client/.env.example
 -  M prumo-web-client/.github/workflows/ci.yml
 -  M prumo-web-client/.github/workflows/deploy-vercel.yml
 -  M prumo-web-client/README.md
 -  M prumo-web-client/index.html
 -  M prumo-web-client/package-lock.json
--  M prumo-web-client/package.json
 -  M prumo-web-client/src/App.tsx
 -  M prumo-web-client/src/components/PageShell.tsx
 -  M prumo-web-client/src/integrations/supabase/client.ts
@@ -144,27 +138,16 @@ Generated at: 2026-03-14 10:25:56 -03:00
 - D  vite.config.ts
 - D  vitest.config.ts
 - ?? .nvmrc
-- ?? docs/cleanup-inventory-after.md
-- ?? docs/cleanup-inventory-before.md
-- ?? docs/ops-runbook.md
-- ?? docs/workspace-topology.md
-- ?? prumo-owner-windows/scripts/
-- ?? prumo-web-client/scripts/
 - ?? prumo-web-client/src/pages/AlertasManager.tsx
 - ?? prumo-web-client/src/pages/AlmoxarifeRapido.tsx
 - ?? prumo-web-client/src/pages/PedidosPlanejamentoManager.tsx
 - ?? prumo-web-client/src/pages/SubstituicoesManager.tsx
-- ?? scripts/clean-root.mjs
 - ?? supabase/migrations/20260314120000_prumo_2026_three_releases.sql
 
 ## Git Status: C:\Users\caio.rossoni\Downloads\Promo\prumo-windows-client
 - ## codex/cleanup-irrelevantes
--  M .gitignore
--  M package.json
-- ?? scripts/clean.mjs
+- (clean)
 
 ## Git Status: C:\Users\caio.rossoni\Downloads\Promo\prumo-android-client
 - ## codex/cleanup-irrelevantes
--  M .gitignore
--  M package.json
-- ?? scripts/clean.mjs
+- (clean)
