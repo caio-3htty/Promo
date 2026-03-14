@@ -8,7 +8,8 @@ Workspace de orquestracao do ecossistema Promo.
 | `Promo` | `Promo` | Workspace, docs, scripts de operacao e assets compartilhados |
 | `promo_APP_Web` | `promo_APP_Web` | App web principal |
 | `promo_APP_Android` | `promo_APP_Android` | Shell Android (Capacitor) |
-| `promo_APP_Windows` | `promo_APP_Windows` | Shell desktop (Electron) para Windows e Linux |
+| `promo_APP_Windows` | `promo_APP_Windows` | Shell desktop dedicado para Windows |
+| `promo_APP_Linux` | `promo_APP_Linux` | Shell desktop dedicado para Linux |
 | `promo_APP_OwnerWindows` | `promo_APP_OwnerWindows` | App owner-control desktop |
 
 ## Requisitos
@@ -24,6 +25,7 @@ nvm use
 npm run supabase:test
 npm run smoke:rbac
 npm run alerts:dispatch:dry
+npm run windows:build
 npm run linux:build
 ```
 

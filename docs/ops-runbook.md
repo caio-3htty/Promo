@@ -11,12 +11,18 @@ npm --prefix promo_APP_Web run build
 npm --prefix promo_APP_Web run build:embedded
 ```
 
-### Desktop shell Windows/Linux (`promo_APP_Windows`)
+### Desktop shell Windows (`promo_APP_Windows`)
 ```bash
 npm --prefix promo_APP_Windows ci
 npm --prefix promo_APP_Windows run desktop:prepare:web
 npm --prefix promo_APP_Windows run desktop:build:win
-npm --prefix promo_APP_Windows run desktop:build:linux
+```
+
+### Desktop shell Linux (`promo_APP_Linux`)
+```bash
+npm --prefix promo_APP_Linux ci
+npm --prefix promo_APP_Linux run desktop:prepare:web
+npm --prefix promo_APP_Linux run desktop:build:linux
 ```
 
 ### Android shell (`promo_APP_Android`)
@@ -38,6 +44,7 @@ npm run supabase:test
 npm run smoke:rbac
 npm run alerts:dispatch:dry
 npm run alerts:dispatch
+npm run windows:build
 npm run linux:build
 ```
 
