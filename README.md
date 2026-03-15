@@ -1,127 +1,91 @@
-# Welcome to your Lovable project
+# Promo Workspace
 
-## Project info
+Workspace de orquestracao do ecossistema Promo.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## Mapa oficial de repositorios
+| Nome local | Repositorio GitHub | Finalidade |
+| --- | --- | --- |
+| `Promo` | `Promo` | Workspace, docs, scripts de operacao e assets compartilhados |
+| `promo_APP_Web` | `promo_APP_Web` | App web principal |
+| `promo_APP_Android` | `promo_APP_Android` | App Android nativo (Kotlin/Gradle) |
+| `promo_APP_Windows` | `promo_APP_Windows` | Shell desktop dedicado para Windows |
+| `promo_APP_Linux` | `promo_APP_Linux` | Shell desktop dedicado para Linux |
+| `promo_APP_OwnerWindows` | `promo_APP_OwnerWindows` | App owner-control desktop |
 
-## How can I edit this code?
+## Requisitos
+- Node.js 20+
+- npm 10+
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+nvm use
 ```
 
-**Edit a file directly in GitHub**
+## Fluxo operacional da raiz
+```bash
+npm run env:doctor
+npm run supabase:test
+npm run supabase:validate:access
+npm run smoke:rbac
+npm run alerts:dispatch:dry
+npm run windows:build
+npm run linux:build
+npm run android:doctor
+npm run android:build
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+## Conexao Supabase (padrao fixo no codigo)
+- Scripts da raiz usam `scripts/lib/env-resolver.mjs` e carregam automaticamente `.env`/`.env.local` da raiz e dos apps.
+- Se `SUPABASE_URL` nao existir, a URL e derivada de `SUPABASE_PROJECT_REF` (default `awkvzbpnihtgceqdwisc`).
+- Alias aceitos: `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_ANON_KEY`, `SUPABASE_SECRET_KEY`.
+- Segredos continuam fora do Git (apenas em `.env` local/Secrets de CI/Vercel/Supabase).
 
-**Use GitHub Codespaces**
+## Limpeza
+```bash
+npm run clean
+npm run clean:all
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Code Hygiene Pass
+```bash
+npm run cleanup:web
+npm run cleanup:android
+npm run cleanup:windows
+npm run cleanup:owner
+npm run cleanup:linux
+```
 
-## What technologies are used for this project?
+Execucao completa:
+```bash
+npm run cleanup:full-pass
+```
 
-This project is built with:
+Relatorios e allowlists: `docs/cleanup/`.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## Master Test Waves
+```bash
+npm run test:waves:auto
+```
 
-## Access model (Prumo)
+Ondas individuais:
+```bash
+npm run test:waves:wave1
+npm run test:waves:wave2
+npm run test:waves:wave3
+npm run test:waves:wave4
+```
 
-- Auth: Supabase (signup aberto controlado)
-- RBAC: papel unico em `public.user_roles` (`master`, `gestor`, `engenheiro`, `operacional`, `almoxarife`)
-- Tipos da empresa: `public.user_types` (cada tipo mapeia para um papel base)
-- Escopo por obra: `public.user_obras`
-- Ativacao de usuario e tipo: `public.profiles.is_active`, `public.profiles.user_type_id`
-- Auditoria: `public.audit_log`
+Execucao completa (inclui wave3 automatizada):
+```bash
+npm run test:waves:full
+```
 
-### Multi-tenant + granular permissions (new)
+Evidencias: `docs/test-runs/<YYYY-MM-DD>/<run-id>/`.
 
-- Tenant isolation: `public.tenants`, `tenant_id` nas tabelas de acesso e operacao.
-- Configuracao por tenant: `public.tenant_settings` (`multi_obra_enabled`, `default_obra_id`).
-- Permissoes granulares:
-- `public.permission_catalog`
-- `public.user_permission_grants`
-- `public.user_permission_obras`
-- `public.user_type_permissions`
-- RPCs owner-control (`owner_control`):
-- `owner_publish_template_version`
-- `owner_activate_template_version`
-- `owner_restore_soft_deleted`
-- `owner_restore_field_version`
-
-### Multi-app workspace bootstrap
-
-- `prumo-web-client`
-- `prumo-android-client`
-- `prumo-windows-client`
-- `prumo-owner-windows`
-- `packages/prumo-core`
-
-### Main routes
-
-- `/obras`
-- `/dashboard/:obraId`
-- `/dashboard/:obraId/pedidos`
-- `/dashboard/:obraId/recebimento`
-- `/dashboard/:obraId/estoque`
-- `/cadastros/fornecedores`
-- `/cadastros/materiais`
-- `/cadastros/material-fornecedor`
-- `/usuarios-acessos` (somente master)
-
-### Demo seed
-
-Execute `supabase/seed.sql` after migrations to load:
-
-- 3 obras
-- 3 fornecedores
-- 3 materiais
-- 3 vinculos material x fornecedor
-- 3 pedidos de compra
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Leituras recomendadas
+- `docs/workspace-topology.md`
+- `docs/ops-runbook.md`
+- `docs/web-release-checklist.md`
+- `docs/cleanup/README.md`
+- `docs/test-runs/README.md`
+- `docs/test-runs/env-contract.md`
+- `docs/test-runs/release-approval-checklist.md`

@@ -1,4 +1,4 @@
-﻿export type PermissionScopeType = "tenant" | "all_obras" | "selected_obras";
+export type PermissionScopeType = "tenant" | "all_obras" | "selected_obras";
 
 export type PermissionKey =
   | "users.manage"

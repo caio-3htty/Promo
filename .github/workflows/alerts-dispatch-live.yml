@@ -1,0 +1,45 @@
+name: alerts-dispatch-live
+
+on:
+  workflow_dispatch:
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      SUPABASE_TENANT_ID: ${{ secrets.SUPABASE_TENANT_ID }}
+      CRITICAL_ALERT_FALLBACK_EMAIL: ${{ secrets.CRITICAL_ALERT_FALLBACK_EMAIL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate required secrets
+        shell: bash
+        run: |
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Missing SUPABASE_SERVICE_ROLE_KEY"
+            exit 1
+          fi
+          if [ -z "$SUPABASE_URL" ] && [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_PROJECT_REF"
+            exit 1
+          fi
+
+      - name: Run alerts dispatch (live email)
+        run: npm run alerts:dispatch 2>&1 | tee alerts-dispatch-live.log
+
+      - name: Upload alerts live logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alerts-dispatch-live-${{ github.run_id }}
+          path: alerts-dispatch-live.log
+          if-no-files-found: warn

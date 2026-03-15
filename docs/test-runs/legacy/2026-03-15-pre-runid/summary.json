@@ -1,0 +1,85 @@
+{
+  "generatedAt": "2026-03-15T16:58:18.410Z",
+  "selectedWaves": [
+    "wave1",
+    "wave2",
+    "wave4"
+  ],
+  "total": 8,
+  "passed": 8,
+  "failed": 0,
+  "results": [
+    {
+      "wave": "wave1",
+      "id": "cleanup_full_pass",
+      "label": "Sanidade automatizada full pass",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 321488,
+      "logPath": "C:\\Users\\caio.rossoni\\Downloads\\Promo\\docs\\test-runs\\2026-03-15\\wave1\\cleanup_full_pass.log"
+    },
+    {
+      "wave": "wave2",
+      "id": "supabase_test",
+      "label": "Conectividade e leitura Supabase",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 4251,
+      "logPath": "C:\\Users\\caio.rossoni\\Downloads\\Promo\\docs\\test-runs\\2026-03-15\\wave2\\supabase_test.log"
+    },
+    {
+      "wave": "wave2",
+      "id": "supabase_validate_access",
+      "label": "Validacao de acesso e sessao",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 4279,
+      "logPath": "C:\\Users\\caio.rossoni\\Downloads\\Promo\\docs\\test-runs\\2026-03-15\\wave2\\supabase_validate_access.log"
+    },
+    {
+      "wave": "wave2",
+      "id": "smoke_rbac",
+      "label": "Smoke RBAC multi-tenant",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 9421,
+      "logPath": "C:\\Users\\caio.rossoni\\Downloads\\Promo\\docs\\test-runs\\2026-03-15\\wave2\\smoke_rbac.log"
+    },
+    {
+      "wave": "wave2",
+      "id": "alerts_dispatch_dry",
+      "label": "Dry-run de alertas",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 3197,
+      "logPath": "C:\\Users\\caio.rossoni\\Downloads\\Promo\\docs\\test-runs\\2026-03-15\\wave2\\alerts_dispatch_dry.log"
+    },
+    {
+      "wave": "wave4",
+      "id": "web_ci_verify",
+      "label": "Gate web pre-release",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 42953,
+      "logPath": "C:\\Users\\caio.rossoni\\Downloads\\Promo\\docs\\test-runs\\2026-03-15\\wave4\\web_ci_verify.log"
+    },
+    {
+      "wave": "wave4",
+      "id": "smoke_rbac_final",
+      "label": "Smoke RBAC final",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 8422,
+      "logPath": "C:\\Users\\caio.rossoni\\Downloads\\Promo\\docs\\test-runs\\2026-03-15\\wave4\\smoke_rbac_final.log"
+    },
+    {
+      "wave": "wave4",
+      "id": "alerts_dispatch_dry_final",
+      "label": "Dry-run de alertas final",
+      "status": "PASS",
+      "exitCode": 0,
+      "durationMs": 2967,
+      "logPath": "C:\\Users\\caio.rossoni\\Downloads\\Promo\\docs\\test-runs\\2026-03-15\\wave4\\alerts_dispatch_dry_final.log"
+    }
+  ]
+}
