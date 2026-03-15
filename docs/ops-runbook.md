@@ -62,6 +62,7 @@ npm --prefix promo_APP_OwnerWindows run build
 ```bash
 npm run env:doctor
 npm run supabase:test
+npm run supabase:validate:access
 npm run smoke:rbac
 npm run alerts:dispatch:dry
 npm run alerts:dispatch
@@ -73,13 +74,25 @@ npm run android:build
 
 ## Variaveis de ambiente de smoke
 - `SUPABASE_PROJECT_REF`
+- `SUPABASE_URL`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_TENANT_ID`
+- `VALIDATION_LOGIN_EMAIL`
+- `VALIDATION_LOGIN_PASSWORD`
 - credenciais `SMOKE_*` por papel
 - `RESEND_API_KEY` (para disparo real de e-mail critico)
 - `RESEND_FROM_EMAIL`
 - `CRITICAL_ALERT_FALLBACK_EMAIL` (opcional)
+
+## Diagnostico de banco e login
+- `npm run supabase:test`: valida `connectivity`, `auth` e `read` com saida estruturada.
+- `npm run supabase:validate:access`: valida login real, profile/tenant, leitura minima e sanity da edge function `account-access-request`.
+- Erros esperados mapeados:
+  - credencial invalida,
+  - usuario sem profile/tenant,
+  - usuario inativo,
+  - problema de chave/ambiente.
 
 ## Politica de commit
 - Nao commitar build artifacts e caches.

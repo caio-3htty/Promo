@@ -24,6 +24,7 @@ nvm use
 ```bash
 npm run env:doctor
 npm run supabase:test
+npm run supabase:validate:access
 npm run smoke:rbac
 npm run alerts:dispatch:dry
 npm run windows:build
