@@ -32,7 +32,7 @@ const checkNode = () => {
   }
 
   if (!hasCommand("npm", ["--version"])) {
-    errors.push("npm não encontrado no PATH.");
+    errors.push("npm nao encontrado no PATH.");
     return;
   }
 
@@ -54,9 +54,21 @@ const parseSdkDirFromLocalProperties = () => {
   return line.replace("sdk.dir=", "").trim().replace(/\\\\/g, "\\");
 };
 
+const hasJavaFromHome = () => {
+  const javaHome = process.env.JAVA_HOME;
+  if (!javaHome) return false;
+
+  return (
+    existsSync(join(javaHome, "bin", "java.exe")) ||
+    existsSync(join(javaHome, "bin", "java"))
+  );
+};
+
 const checkAndroid = () => {
   const javaInPath = hasCommand("java", ["-version"]);
-  if (!javaInPath) {
+  const javaFromHome = hasJavaFromHome();
+
+  if (!javaInPath && !javaFromHome) {
     errors.push("Java nao encontrado no PATH. Defina JAVA_HOME e inclua %JAVA_HOME%\\bin no PATH.");
   }
 

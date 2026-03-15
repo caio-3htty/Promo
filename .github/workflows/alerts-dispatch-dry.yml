@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       SUPABASE_TENANT_ID: ${{ secrets.SUPABASE_TENANT_ID }}
       CRITICAL_ALERT_FALLBACK_EMAIL: ${{ secrets.CRITICAL_ALERT_FALLBACK_EMAIL }}
@@ -23,16 +24,24 @@ jobs:
           node-version: 20
 
       - name: Validate required secrets
-        id: validate
         shell: bash
         run: |
-          if [ -z "$SUPABASE_PROJECT_REF" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Missing SUPABASE_PROJECT_REF and/or SUPABASE_SERVICE_ROLE_KEY. Skipping."
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Missing SUPABASE_SERVICE_ROLE_KEY"
+            exit 1
+          fi
+          if [ -z "$SUPABASE_URL" ] && [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_PROJECT_REF"
+            exit 1
           fi
 
       - name: Run alerts dispatch dry-run
-        if: steps.validate.outputs.ready == 'true'
-        run: node scripts/process-critical-alerts.mjs --dry-run
+        run: node scripts/process-critical-alerts.mjs --dry-run 2>&1 | tee alerts-dispatch-dry.log
+
+      - name: Upload alerts dry logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: alerts-dispatch-dry-${{ github.run_id }}
+          path: alerts-dispatch-dry.log
+          if-no-files-found: warn

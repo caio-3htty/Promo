@@ -1,0 +1,83 @@
+name: wave3-regression
+
+on:
+  workflow_dispatch:
+  pull_request:
+
+jobs:
+  wave3:
+    runs-on: windows-latest
+    env:
+      SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      VALIDATION_LOGIN_EMAIL: ${{ secrets.VALIDATION_LOGIN_EMAIL }}
+      VALIDATION_LOGIN_PASSWORD: ${{ secrets.VALIDATION_LOGIN_PASSWORD }}
+      VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Validate required env
+        shell: pwsh
+        run: |
+          $missing = New-Object System.Collections.Generic.List[string]
+
+          if (-not $env:VITE_SUPABASE_URL) { $missing.Add("VITE_SUPABASE_URL") }
+          if (-not $env:VITE_SUPABASE_PUBLISHABLE_KEY) { $missing.Add("VITE_SUPABASE_PUBLISHABLE_KEY") }
+          if (-not $env:SUPABASE_ANON_KEY) { $missing.Add("SUPABASE_ANON_KEY") }
+          if (-not $env:VALIDATION_LOGIN_EMAIL) { $missing.Add("VALIDATION_LOGIN_EMAIL") }
+          if (-not $env:VALIDATION_LOGIN_PASSWORD) { $missing.Add("VALIDATION_LOGIN_PASSWORD") }
+          if (-not $env:SUPABASE_URL -and -not $env:SUPABASE_PROJECT_REF) {
+            $missing.Add("SUPABASE_URL|SUPABASE_PROJECT_REF")
+          }
+
+          if ($missing.Count -gt 0) {
+            throw "Missing env for wave3 regression: $($missing -join ', ')"
+          }
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Install web dependencies
+        run: npm --prefix promo_APP_Web ci
+
+      - name: Install android dependencies
+        run: npm --prefix promo_APP_Android ci
+
+      - name: Install windows dependencies
+        run: npm --prefix promo_APP_Windows ci
+
+      - name: Install owner windows dependencies
+        run: npm --prefix promo_APP_OwnerWindows ci
+
+      - name: Install linux dependencies
+        run: npm --prefix promo_APP_Linux ci
+
+      - name: Run wave3 critical regression
+        run: npm run test:waves:wave3
+
+      - name: Upload wave3 artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wave3-regression-${{ github.run_id }}
+          path: docs/test-runs/**
+          if-no-files-found: warn

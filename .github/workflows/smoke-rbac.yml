@@ -30,37 +30,28 @@ jobs:
           node-version: 20
 
       - name: Validate required secrets
-        id: validate
         shell: bash
         run: |
-          missing=0
-          required=(
-            SUPABASE_PROJECT_REF
-            SUPABASE_SERVICE_ROLE_KEY
-            SUPABASE_ANON_KEY
-            SUPABASE_TENANT_ID
-            SMOKE_GESTOR_EMAIL
-            SMOKE_GESTOR_PASSWORD
-            SMOKE_OPERACIONAL_EMAIL
-            SMOKE_OPERACIONAL_PASSWORD
-            SMOKE_ENGENHEIRO_EMAIL
-            SMOKE_ENGENHEIRO_PASSWORD
-            SMOKE_ALMOXARIFE_EMAIL
-            SMOKE_ALMOXARIFE_PASSWORD
-          )
-          for key in "${required[@]}"; do
-            if [ -z "${!key}" ]; then
-              echo "Missing $key"
-              missing=1
-            fi
-          done
-          if [ "$missing" -eq 1 ]; then
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Required secrets missing. Skipping smoke."
-          else
-            echo "ready=true" >> "$GITHUB_OUTPUT"
+          if [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "Missing SUPABASE_SERVICE_ROLE_KEY"
+            exit 1
+          fi
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "Missing SUPABASE_ANON_KEY"
+            exit 1
+          fi
+          if [ -z "$SUPABASE_URL" ] && [ -z "$SUPABASE_PROJECT_REF" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_PROJECT_REF"
+            exit 1
           fi
 
       - name: Run smoke RBAC
-        if: steps.validate.outputs.ready == 'true'
-        run: npm run smoke:rbac
+        run: npm run smoke:rbac 2>&1 | tee smoke-rbac.log
+
+      - name: Upload smoke logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-rbac-${{ github.run_id }}
+          path: smoke-rbac.log
+          if-no-files-found: warn

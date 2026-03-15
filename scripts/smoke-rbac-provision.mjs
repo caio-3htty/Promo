@@ -1,59 +1,26 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
-import path from "node:path";
+import { bootstrapEnv, missingRequired } from "./lib/env-resolver.mjs";
 
-function loadDotEnv(filePath) {
-  if (!fs.existsSync(filePath)) return;
-
-  const content = fs.readFileSync(filePath, "utf8");
-  for (const rawLine of content.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-
-    const equalsIndex = line.indexOf("=");
-    if (equalsIndex <= 0) continue;
-
-    const key = line.slice(0, equalsIndex).trim();
-    let value = line.slice(equalsIndex + 1).trim();
-    if (
-      (value.startsWith("\"") && value.endsWith("\"")) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    if (!process.env[key]) process.env[key] = value;
-  }
-}
-
-loadDotEnv(path.resolve(process.cwd(), ".env"));
+bootstrapEnv({ cwd: process.cwd() });
 const REQUIRED_KEYS = [
-  "SUPABASE_PROJECT_REF",
   "SUPABASE_SERVICE_ROLE_KEY",
   "SUPABASE_ANON_KEY",
-  "SUPABASE_TENANT_ID",
-  "SMOKE_GESTOR_EMAIL",
-  "SMOKE_GESTOR_PASSWORD",
-  "SMOKE_OPERACIONAL_EMAIL",
-  "SMOKE_OPERACIONAL_PASSWORD",
-  "SMOKE_ENGENHEIRO_EMAIL",
-  "SMOKE_ENGENHEIRO_PASSWORD",
-  "SMOKE_ALMOXARIFE_EMAIL",
-  "SMOKE_ALMOXARIFE_PASSWORD",
 ];
 
-const missingKeys = REQUIRED_KEYS.filter((key) => !process.env[key]);
+const missingKeys = missingRequired(REQUIRED_KEYS);
 if (missingKeys.length > 0) {
   console.error(`Missing required environment variables: ${missingKeys.join(", ")}`);
   process.exit(1);
 }
 
-const PROJECT_REF = process.env.SUPABASE_PROJECT_REF;
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF || "";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const ANON_KEY = process.env.SUPABASE_ANON_KEY;
-const TENANT_ID = process.env.SUPABASE_TENANT_ID;
-const BASE_URL = `https://${PROJECT_REF}.supabase.co`;
+let TENANT_ID = process.env.SUPABASE_TENANT_ID || null;
+const BASE_URL = process.env.SUPABASE_URL || `https://${PROJECT_REF}.supabase.co`;
+const DEFAULT_SMOKE_PASSWORD = process.env.SMOKE_DEFAULT_PASSWORD || "Smoke1050!";
+const DEFAULT_EMAIL_PREFIX = process.env.SMOKE_EMAIL_PREFIX || "smoke.prumo";
 
 const buildSmokeUser = ({ role, defaultScope }) => {
   const prefix = `SMOKE_${role.toUpperCase()}`;
@@ -63,10 +30,15 @@ const buildSmokeUser = ({ role, defaultScope }) => {
     throw new Error(`Invalid scope for ${prefix}_SCOPE. Expected A, B or AB.`);
   }
 
+  const email =
+    process.env[`${prefix}_EMAIL`] ||
+    `${DEFAULT_EMAIL_PREFIX}.${role}.${PROJECT_REF || "default"}@example.com`;
+  const password = process.env[`${prefix}_PASSWORD`] || DEFAULT_SMOKE_PASSWORD;
+
   return {
     role,
-    email: process.env[`${prefix}_EMAIL`],
-    password: process.env[`${prefix}_PASSWORD`],
+    email,
+    password,
     fullName: process.env[`${prefix}_FULL_NAME`] || `${role} smoke`,
     scope,
   };
@@ -91,24 +63,7 @@ const parseTestUsers = () => {
     { role: "almoxarife", scope: process.env.SMOKE_ALMOXARIFE_SCOPE || "B" },
   ];
 
-  return requiredUsers.map((item) => {
-    const upper = item.role.toUpperCase();
-    const email = process.env[`SMOKE_${upper}_EMAIL`];
-    const password = process.env[`SMOKE_${upper}_PASSWORD`];
-    const fullName = process.env[`SMOKE_${upper}_FULL_NAME`] || `${item.role} smoke`;
-
-    if (!email || !password) {
-      throw new Error(`Missing credentials env for role ${item.role}: SMOKE_${upper}_EMAIL and SMOKE_${upper}_PASSWORD`);
-    }
-
-    return {
-      role: item.role,
-      email,
-      password,
-      fullName,
-      scope: item.scope,
-    };
-  });
+  return requiredUsers.map((item) => buildSmokeUser({ role: item.role, defaultScope: item.scope }));
 };
 
 const testUsers = parseTestUsers();
@@ -187,6 +142,26 @@ async function restService(path, { method = "GET", body, prefer, selectSchema } 
   });
 }
 
+async function resolveTenantId() {
+  const diagnostics = [];
+
+  const fromObras = await restService("obras?select=tenant_id&deleted_at=is.null&limit=1");
+  if (fromObras.ok && Array.isArray(fromObras.data) && fromObras.data[0]?.tenant_id) {
+    return fromObras.data[0].tenant_id;
+  }
+  diagnostics.push(`obras:${fromObras.status}`);
+
+  const fromProfiles = await restService("profiles?select=tenant_id&tenant_id=not.is.null&limit=1");
+  if (fromProfiles.ok && Array.isArray(fromProfiles.data) && fromProfiles.data[0]?.tenant_id) {
+    return fromProfiles.data[0].tenant_id;
+  }
+  diagnostics.push(`profiles:${fromProfiles.status}`);
+
+  throw new Error(
+    `Nao foi possivel determinar SUPABASE_TENANT_ID automaticamente (tentativas ${diagnostics.join(", ")}).`
+  );
+}
+
 async function restUser(path, accessToken, { method = "GET", body, prefer } = {}) {
   const headers = jsonHeaders(ANON_KEY, {
     Authorization: `Bearer ${accessToken}`,
@@ -230,6 +205,10 @@ async function login(email, password) {
 }
 
 async function main() {
+  if (!TENANT_ID) {
+    TENANT_ID = await resolveTenantId();
+  }
+
   const report = [];
 
   const obrasRes = await restService(
@@ -331,7 +310,7 @@ async function main() {
     }
   };
 
-  await check("Gestor lÃƒÂª pedidos das duas obras", async () => {
+  await check("Gestor le pedidos das duas obras", async () => {
     const token = sessions.gestor.access_token;
     const a = await restUser(
       `pedidos_compra?select=id,obra_id&obra_id=eq.${encodeFilterValue(obraA.id)}&deleted_at=is.null`,
@@ -349,7 +328,7 @@ async function main() {
   let created = {};
   const tag = Date.now();
 
-  await check("Operacional cria fornecedor/material/vÃƒÂ­nculo/pedido na obra A", async () => {
+  await check("Operacional cria fornecedor/material/vinculo/pedido na obra A", async () => {
     const token = sessions.operacional.access_token;
     const cnpj = String(tag).slice(-14).padStart(14, "0");
 
@@ -535,7 +514,7 @@ async function main() {
     throw new Error("engenheiro conseguiu criar incidente");
   });
 
-  await check("Operacional nÃƒÂ£o lÃƒÂª pedidos da obra B", async () => {
+  await check("Operacional nao le pedidos da obra B", async () => {
     const token = sessions.operacional.access_token;
     const res = await restUser(
       `pedidos_compra?select=id&obra_id=eq.${encodeFilterValue(obraB.id)}&deleted_at=is.null`,
@@ -546,7 +525,7 @@ async function main() {
     return { rows: res.data.length };
   });
 
-  await check("Engenheiro aprova pedido e define cÃƒÂ³digo", async () => {
+  await check("Engenheiro aprova pedido e define codigo", async () => {
     if (!created.pedidoAId) throw new Error("pedidoAId missing");
     const token = sessions.engenheiro.access_token;
 
@@ -567,7 +546,7 @@ async function main() {
     return { id: updateRes.data[0].id, status: updateRes.data[0].status, codigo: updateRes.data[0].codigo_compra };
   });
 
-  await check("Engenheiro nÃƒÂ£o altera quantidade do pedido", async () => {
+  await check("Engenheiro nao altera quantidade do pedido", async () => {
     const token = sessions.engenheiro.access_token;
     const patchRes = await restUser(`pedidos_compra?id=eq.${encodeFilterValue(created.pedidoAId)}`, token, {
       method: "PATCH",
@@ -623,7 +602,7 @@ async function main() {
     return { id: res.data.id, status: res.data.status, ack_em: res.data.ack_em };
   });
 
-  await check("Almoxarife nÃƒÂ£o lÃƒÂª pedidos da obra A", async () => {
+  await check("Almoxarife nao le pedidos da obra A", async () => {
     const token = sessions.almoxarife.access_token;
     const res = await restUser(
       `pedidos_compra?select=id&obra_id=eq.${encodeFilterValue(obraA.id)}&deleted_at=is.null`,
@@ -688,7 +667,7 @@ async function main() {
 
     if (!patchRes.ok) throw new Error(`entrega failed: ${patchRes.status} ${JSON.stringify(patchRes.data)}`);
     if (!Array.isArray(patchRes.data) || patchRes.data.length !== 1) {
-      throw new Error("almoxarife nÃƒÂ£o conseguiu atualizar pedido da obra B");
+      throw new Error("almoxarife nao conseguiu atualizar pedido da obra B");
     }
 
     return { id: patchRes.data[0].id, status: patchRes.data[0].status };
@@ -751,5 +730,6 @@ main().catch((error) => {
   console.error(error);
   process.exit(1);
 });
+
 
 

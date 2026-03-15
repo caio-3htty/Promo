@@ -1,46 +1,22 @@
 #!/usr/bin/env node
 
-import fs from "node:fs";
-import path from "node:path";
+import { bootstrapEnv, missingRequired } from "./lib/env-resolver.mjs";
 
-function loadDotEnv(filePath) {
-  if (!fs.existsSync(filePath)) return;
-  const content = fs.readFileSync(filePath, "utf8");
-  for (const rawLine of content.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
+bootstrapEnv({ cwd: process.cwd() });
 
-    const equalsIndex = line.indexOf("=");
-    if (equalsIndex <= 0) continue;
-
-    const key = line.slice(0, equalsIndex).trim();
-    let value = line.slice(equalsIndex + 1).trim();
-    if (
-      (value.startsWith("\"") && value.endsWith("\"")) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    if (!process.env[key]) process.env[key] = value;
-  }
-}
-
-loadDotEnv(path.resolve(process.cwd(), ".env"));
-
-const REQUIRED_KEYS = ["SUPABASE_PROJECT_REF", "SUPABASE_SERVICE_ROLE_KEY"];
-const missingKeys = REQUIRED_KEYS.filter((key) => !process.env[key]);
+const REQUIRED_KEYS = ["SUPABASE_SERVICE_ROLE_KEY"];
+const missingKeys = missingRequired(REQUIRED_KEYS);
 if (missingKeys.length > 0) {
   console.error(`Missing required environment variables: ${missingKeys.join(", ")}`);
   process.exit(1);
 }
 
-const PROJECT_REF = process.env.SUPABASE_PROJECT_REF;
+const PROJECT_REF = process.env.SUPABASE_PROJECT_REF || "";
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const TENANT_ID = process.env.SUPABASE_TENANT_ID || null;
 const FALLBACK_EMAIL = process.env.CRITICAL_ALERT_FALLBACK_EMAIL || null;
 const DRY_RUN = process.argv.includes("--dry-run");
-const BASE_URL = `https://${PROJECT_REF}.supabase.co`;
+const BASE_URL = process.env.SUPABASE_URL || `https://${PROJECT_REF}.supabase.co`;
 
 const jsonHeaders = {
   apikey: SERVICE_ROLE_KEY,

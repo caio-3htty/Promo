@@ -1,32 +1,7 @@
-import fs from "node:fs";
-import path from "node:path";
+import { bootstrapEnv } from "./lib/env-resolver.mjs";
 
 const PASS = "PASS";
 const FAIL = "FAIL";
-
-function loadDotEnv(filePath) {
-  if (!fs.existsSync(filePath)) return;
-
-  const content = fs.readFileSync(filePath, "utf8");
-  for (const rawLine of content.split(/\r?\n/)) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-
-    const equalsIndex = line.indexOf("=");
-    if (equalsIndex <= 0) continue;
-
-    const key = line.slice(0, equalsIndex).trim();
-    let value = line.slice(equalsIndex + 1).trim();
-    if (
-      (value.startsWith("\"") && value.endsWith("\"")) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-
-    if (!process.env[key]) process.env[key] = value;
-  }
-}
 
 const readBody = async (response) => {
   const text = await response.text();
@@ -50,7 +25,7 @@ const summarizeError = (payload) => {
   );
 };
 
-loadDotEnv(path.resolve(process.cwd(), ".env"));
+bootstrapEnv({ cwd: process.cwd() });
 
 const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const anonKey =

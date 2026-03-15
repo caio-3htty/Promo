@@ -27,6 +27,21 @@
     "supabase:validate:access": "node scripts/validate-access-login.mjs",
     "smoke:rbac": "node scripts/smoke-rbac-provision.mjs",
     "alerts:dispatch": "node scripts/process-critical-alerts.mjs",
-    "alerts:dispatch:dry": "node scripts/process-critical-alerts.mjs --dry-run"
+    "alerts:dispatch:dry": "node scripts/process-critical-alerts.mjs --dry-run",
+    "cleanup:web": "npm --prefix promo_APP_Web run cleanup:verify",
+    "cleanup:android": "npm run android:doctor && node scripts/android-gradle.mjs lintDebug testDebugUnitTest assembleDebug assembleRelease",
+    "cleanup:windows": "npm --prefix promo_APP_Windows run cleanup:verify",
+    "cleanup:owner": "npm --prefix promo_APP_OwnerWindows run cleanup:verify",
+    "cleanup:linux": "npm --prefix promo_APP_Linux run cleanup:verify",
+    "cleanup:full-pass": "npm run cleanup:web && npm run cleanup:android && npm run cleanup:windows && npm run cleanup:owner && npm run cleanup:linux",
+    "wave3:web:persona": "node scripts/wave3-web-persona.mjs",
+    "wave3:desktop:smoke": "node scripts/wave3-desktop-shell-smoke.mjs",
+    "wave3:android:functional": "node scripts/wave3-android-functional.mjs",
+    "test:waves:auto": "node scripts/master-test-run.mjs --waves=wave1,wave2,wave4",
+    "test:waves:full": "node scripts/master-test-run.mjs --waves=wave1,wave2,wave3,wave4",
+    "test:waves:wave1": "node scripts/master-test-run.mjs --waves=wave1",
+    "test:waves:wave2": "node scripts/master-test-run.mjs --waves=wave2",
+    "test:waves:wave3": "node scripts/master-test-run.mjs --waves=wave3",
+    "test:waves:wave4": "node scripts/master-test-run.mjs --waves=wave4"
   }
 }
