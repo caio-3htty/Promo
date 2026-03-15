@@ -96,7 +96,7 @@ jobs:
         run: npm --prefix promo_APP_Web ci
 
       - name: Install android dependencies
-        run: npm --prefix promo_APP_Android ci
+        run: npm --prefix promo_APP_Android install --no-audit --no-fund
 
       - name: Install windows dependencies
         run: npm --prefix promo_APP_Windows ci
