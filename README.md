@@ -12,6 +12,12 @@ Workspace de orquestracao do ecossistema Promo.
 | `promo_APP_Linux` | `promo_APP_Linux` | Shell desktop dedicado para Linux |
 | `promo_APP_OwnerWindows` | `promo_APP_OwnerWindows` | App owner-control desktop |
 
+## Status de publicacao (2026-03-15)
+- Publicacao consolidada em `main` nos 6 repositorios do ecossistema.
+- Politica de branch: `main` como branch oficial; `codex/*` apenas temporarias por ciclo e removidas apos merge/fechamento.
+- Checklist minimo para novos releases: sem PR aberto, CI critica verde em `main`, smoke de producao e evidencias em `docs/test-runs/`.
+- Snapshot de fechamento: `docs/test-runs/2026-03-15/publication-sync-final.md`.
+
 ## Requisitos
 - Node.js 20+
 - npm 10+
