@@ -11,7 +11,6 @@ jobs:
   waves:
     runs-on: windows-latest
     env:
-      PROMO_APP_REF: ${{ github.head_ref || github.ref_name }}
       SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF || vars.SUPABASE_PROJECT_REF }}
       SUPABASE_URL: ${{ secrets.SUPABASE_URL || vars.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY || vars.SUPABASE_ANON_KEY }}
@@ -29,35 +28,35 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: caio-3htty/promo_APP_Web
-          ref: ${{ env.PROMO_APP_REF }}
+          ref: main
           path: promo_APP_Web
 
       - name: Checkout android app
         uses: actions/checkout@v4
         with:
           repository: caio-3htty/promo_APP_Android
-          ref: ${{ env.PROMO_APP_REF }}
+          ref: main
           path: promo_APP_Android
 
       - name: Checkout windows app
         uses: actions/checkout@v4
         with:
           repository: caio-3htty/promo_APP_Windows
-          ref: ${{ env.PROMO_APP_REF }}
+          ref: main
           path: promo_APP_Windows
 
       - name: Checkout owner windows app
         uses: actions/checkout@v4
         with:
           repository: caio-3htty/promo_APP_OwnerWindows
-          ref: ${{ env.PROMO_APP_REF }}
+          ref: main
           path: promo_APP_OwnerWindows
 
       - name: Checkout linux app
         uses: actions/checkout@v4
         with:
           repository: caio-3htty/promo_APP_Linux
-          ref: ${{ env.PROMO_APP_REF }}
+          ref: main
           path: promo_APP_Linux
 
       - name: Setup Node
