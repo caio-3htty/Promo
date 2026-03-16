@@ -312,10 +312,10 @@ Deno.serve(async (req) => {
     const origin = normalizeText(payload?.origin) || "http://localhost:5173";
 
     if (!email || !password || !fullName || !companyName || !jobTitle) {
-      return jsonResponse({ ok: false, message: "Campos obrigatórios ausentes." }, 400);
+      return jsonResponse({ ok: false, message: "Campos obrigatórios ausentes." }, 200);
     }
     if (password.length < 6) {
-      return jsonResponse({ ok: false, message: "A senha precisa ter ao menos 6 caracteres." }, 400);
+      return jsonResponse({ ok: false, message: "A senha precisa ter ao menos 6 caracteres." }, 200);
     }
 
     const desiredRole: AppRole = isValidRole(requestedRoleRaw) ? requestedRoleRaw : "operacional";
@@ -323,12 +323,12 @@ Deno.serve(async (req) => {
     if (action === "register_company") {
       const slug = slugifyCompany(companyName);
       if (!slug) {
-        return jsonResponse({ ok: false, message: "Nome de empresa inválido." }, 400);
+        return jsonResponse({ ok: false, message: "Nome de empresa inválido." }, 200);
       }
 
       const existingTenant = await resolveTenant(supabase, companyName);
       if (existingTenant) {
-        return jsonResponse({ ok: false, message: "Empresa já existe. Use o fluxo de conta interna." }, 409);
+        return jsonResponse({ ok: false, message: "Empresa já existe. Use o fluxo de conta interna." }, 200);
       }
 
       const authRes = await supabase.auth.admin.createUser({
@@ -341,7 +341,7 @@ Deno.serve(async (req) => {
       if (authRes.error || !authRes.data?.user) {
         return jsonResponse(
           { ok: false, message: authRes.error?.message ?? "Não foi possível criar o usuário da empresa." },
-          400,
+          200,
         );
       }
 
@@ -417,7 +417,7 @@ Deno.serve(async (req) => {
       if (!tenant) {
         return jsonResponse(
           { ok: false, message: "Empresa não encontrada. Solicite a criação da conta empresa primeiro." },
-          404,
+          200,
         );
       }
 
@@ -431,7 +431,7 @@ Deno.serve(async (req) => {
 
       const approverIds = (approverRolesRes.data ?? []).map((row) => row.user_id);
       if (!approverIds.length) {
-        return jsonResponse({ ok: false, message: "A empresa ainda não possui responsável para aprovação." }, 409);
+        return jsonResponse({ ok: false, message: "A empresa ainda não possui responsável para aprovação." }, 200);
       }
 
       const approverProfilesRes = await supabase
@@ -451,7 +451,7 @@ Deno.serve(async (req) => {
 
       const approver = findByRole("master") ?? findByRole("gestor");
       if (!approver?.email) {
-        return jsonResponse({ ok: false, message: "Não foi encontrado e-mail ativo para aprovação na empresa." }, 409);
+        return jsonResponse({ ok: false, message: "Não foi encontrado e-mail ativo para aprovação na empresa." }, 200);
       }
 
       const authRes = await supabase.auth.admin.createUser({
@@ -464,7 +464,7 @@ Deno.serve(async (req) => {
       if (authRes.error || !authRes.data?.user) {
         return jsonResponse(
           { ok: false, message: authRes.error?.message ?? "Não foi possível criar usuário interno." },
-          400,
+          200,
         );
       }
 
