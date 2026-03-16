@@ -34,6 +34,27 @@ const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
     },
   });
 
+const toErrorPayload = (error: unknown) => {
+  const fallback = {
+    message: String(error),
+    details: null as string | null,
+    hint: null as string | null,
+    code: null as string | null,
+  };
+
+  if (!error || typeof error !== "object") {
+    return fallback;
+  }
+
+  const candidate = error as Record<string, unknown>;
+  return {
+    message: typeof candidate.message === "string" ? candidate.message : fallback.message,
+    details: typeof candidate.details === "string" ? candidate.details : null,
+    hint: typeof candidate.hint === "string" ? candidate.hint : null,
+    code: typeof candidate.code === "string" ? candidate.code : null,
+  };
+};
+
 const sendResendEmail = async (
   resendApiKey: string | null,
   from: string,
@@ -329,7 +350,7 @@ Deno.serve(async (req) => {
       try {
         const tenantRes = await supabase
           .from("tenants")
-          .insert({ name: companyName, slug, is_active: true })
+          .insert({ id: crypto.randomUUID(), name: companyName, slug, is_active: true })
           .select("id, name")
           .single();
 
@@ -530,11 +551,15 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ ok: false, message: "Ação inválida." }, 400);
   } catch (error) {
+    const payload = toErrorPayload(error);
     return jsonResponse(
       {
         ok: false,
         message: "Erro interno ao processar solicitação.",
-        error: String(error),
+        error: payload.message,
+        details: payload.details,
+        hint: payload.hint,
+        code: payload.code,
       },
       500,
     );
