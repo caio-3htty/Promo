@@ -190,14 +190,18 @@ if (!hasFailure && accessToken) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        action: "get_request",
-        token: "00000000-0000-0000-0000-000000000000",
+        action: "search_companies",
+        query: "aaa",
       }),
     });
 
     const functionPayload = await readBody(functionRes);
-    if ([200, 401, 404, 409].includes(functionRes.status)) {
-      addResult("edge_function", PASS, `account-access-request respondeu HTTP ${functionRes.status}.`);
+    if (
+      functionRes.status === 200 &&
+      functionPayload?.ok === true &&
+      Array.isArray(functionPayload?.companies)
+    ) {
+      addResult("edge_function", PASS, `account-access-request respondeu HTTP 200 com search_companies.`);
     } else {
       hasFailure = true;
       addResult(
