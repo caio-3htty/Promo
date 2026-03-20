@@ -2,3 +2,6 @@ project_id = "awkvzbpnihtgceqdwisc"
 
 [functions.account-access-request]
 verify_jwt = false
+
+[functions.admin-user-provision]
+verify_jwt = false

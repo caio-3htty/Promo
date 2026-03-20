@@ -6,15 +6,31 @@ const corsHeaders = {
 };
 
 type AppRole = "master" | "gestor" | "engenheiro" | "operacional" | "almoxarife";
-type RequestAction = "register_company" | "register_internal" | "get_request" | "review_request";
+type RequestAction =
+  | "register_company"
+  | "register_internal"
+  | "get_request"
+  | "review_request"
+  | "search_companies";
 type ReviewDecision = "approve" | "reject" | "edit";
 
-const allowedRoles: AppRole[] = ["master", "gestor", "engenheiro", "operacional", "almoxarife"];
+const ALL_ROLES: AppRole[] = ["master", "gestor", "engenheiro", "operacional", "almoxarife"];
 
 const normalizeText = (value: unknown) => String(value ?? "").trim();
+const normalizePlain = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
 
 const isValidRole = (value: unknown): value is AppRole => {
-  return allowedRoles.includes(value as AppRole);
+  return ALL_ROLES.includes(value as AppRole);
+};
+
+const asUuidList = (value: unknown): string[] => {
+  if (!Array.isArray(value)) return [];
+  return value.map((item) => normalizeText(item)).filter(Boolean);
 };
 
 const slugifyCompany = (value: string) =>
@@ -24,6 +40,9 @@ const slugifyCompany = (value: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+
+const sanitizeIlikeTerm = (value: string) =>
+  value.replace(/[%_(),]/g, " ").replace(/\s+/g, " ").trim();
 
 const jsonResponse = (payload: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(payload), {
@@ -63,7 +82,7 @@ const sendResendEmail = async (
   html: string,
 ) => {
   if (!resendApiKey) {
-    return { ok: false, reason: "RESEND_API_KEY não configurada" };
+    return { ok: false, reason: "RESEND_API_KEY nao configurada" };
   }
 
   const response = await fetch("https://api.resend.com/emails", {
@@ -88,12 +107,23 @@ const sendResendEmail = async (
   return { ok: true, reason: null };
 };
 
-const resolveTenant = async (supabase: ReturnType<typeof createClient>, companyName: string) => {
+const resolveTenantById = async (supabase: ReturnType<typeof createClient>, tenantId: string) => {
+  const result = await supabase
+    .from("tenants")
+    .select("id, name, slug, is_active")
+    .eq("id", tenantId)
+    .maybeSingle();
+
+  if (result.error) throw result.error;
+  return result.data;
+};
+
+const resolveTenantByName = async (supabase: ReturnType<typeof createClient>, companyName: string) => {
   const slug = slugifyCompany(companyName);
 
   const bySlug = await supabase
     .from("tenants")
-    .select("id, name, slug")
+    .select("id, name, slug, is_active")
     .eq("slug", slug)
     .limit(1)
     .maybeSingle();
@@ -103,13 +133,175 @@ const resolveTenant = async (supabase: ReturnType<typeof createClient>, companyN
 
   const byName = await supabase
     .from("tenants")
-    .select("id, name, slug")
+    .select("id, name, slug, is_active")
     .ilike("name", companyName)
     .limit(1)
     .maybeSingle();
 
   if (byName.error) throw byName.error;
   return byName.data;
+};
+
+const hasObraSubset = (actorObraIds: string[], requestedObraIds: string[]) => {
+  if (!actorObraIds.length || !requestedObraIds.length) return false;
+  const actorSet = new Set(actorObraIds);
+  return requestedObraIds.every((item) => actorSet.has(item));
+};
+
+const getActorContext = async (
+  supabase: ReturnType<typeof createClient>,
+  actorUserId: string,
+  tenantId: string,
+) => {
+  const [profileRes, roleRes, obraRes, manageRes] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("user_id, is_active, tenant_id")
+      .eq("user_id", actorUserId)
+      .eq("tenant_id", tenantId)
+      .maybeSingle(),
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", actorUserId)
+      .eq("tenant_id", tenantId)
+      .maybeSingle(),
+    supabase
+      .from("user_obras")
+      .select("obra_id")
+      .eq("user_id", actorUserId)
+      .eq("tenant_id", tenantId),
+    supabase.rpc("user_has_permission", {
+      _user_id: actorUserId,
+      _tenant_id: tenantId,
+      _permission_key: "users.manage",
+      _obra_id: null,
+    }),
+  ]);
+
+  if (profileRes.error) throw profileRes.error;
+  if (roleRes.error) throw roleRes.error;
+  if (obraRes.error) throw obraRes.error;
+  if (manageRes.error) throw manageRes.error;
+
+  return {
+    isActive: Boolean(profileRes.data?.is_active),
+    role: (roleRes.data?.role ?? null) as AppRole | null,
+    obraIds: (obraRes.data ?? []).map((item) => item.obra_id as string),
+    hasUsersManage: Boolean(manageRes.data),
+  };
+};
+
+const getAllowedRolesForActor = (
+  actorRole: AppRole | null,
+  hasUsersManage: boolean,
+  actorObraIds: string[],
+  requestedObraIds: string[],
+): AppRole[] => {
+  if (actorRole === "master") {
+    return [...ALL_ROLES];
+  }
+
+  if (!hasUsersManage) {
+    return [];
+  }
+
+  if (actorRole === "gestor") {
+    return ["gestor", "engenheiro", "operacional", "almoxarife"];
+  }
+
+  if (actorRole === "engenheiro" && hasObraSubset(actorObraIds, requestedObraIds)) {
+    return ["operacional", "almoxarife"];
+  }
+
+  return [];
+};
+
+const pickApprover = async (
+  supabase: ReturnType<typeof createClient>,
+  tenantId: string,
+  requestedRole: AppRole,
+  requestedObraIds: string[],
+) => {
+  const roleRes = await supabase
+    .from("user_roles")
+    .select("user_id, role")
+    .eq("tenant_id", tenantId)
+    .in("role", ["master", "gestor", "engenheiro"] as AppRole[]);
+  if (roleRes.error) throw roleRes.error;
+
+  const candidates = roleRes.data ?? [];
+  if (!candidates.length) {
+    return null;
+  }
+
+  const userIds = candidates.map((item) => item.user_id);
+  const profileRes = await supabase
+    .from("profiles")
+    .select("user_id, email, full_name, is_active")
+    .eq("tenant_id", tenantId)
+    .eq("is_active", true)
+    .in("user_id", userIds);
+  if (profileRes.error) throw profileRes.error;
+
+  const profileByUserId = (profileRes.data ?? []).reduce<Record<string, { email: string | null; full_name: string | null }>>(
+    (acc, profile) => {
+      acc[profile.user_id] = { email: profile.email, full_name: profile.full_name };
+      return acc;
+    },
+    {},
+  );
+
+  const priority: Record<AppRole, number> = {
+    master: 1,
+    gestor: 2,
+    engenheiro: 3,
+    operacional: 99,
+    almoxarife: 99,
+  };
+
+  const eligible: Array<{
+    user_id: string;
+    role: AppRole;
+    email: string;
+    full_name: string | null;
+  }> = [];
+
+  for (const candidate of candidates) {
+    const profile = profileByUserId[candidate.user_id];
+    if (!profile?.email) continue;
+
+    const ctx = await getActorContext(supabase, candidate.user_id, tenantId);
+    if (!ctx.isActive) continue;
+
+    const allowedRoles = getAllowedRolesForActor(
+      candidate.role as AppRole,
+      ctx.hasUsersManage,
+      ctx.obraIds,
+      requestedObraIds,
+    );
+
+    if (!allowedRoles.includes(requestedRole)) continue;
+
+    eligible.push({
+      user_id: candidate.user_id,
+      role: candidate.role as AppRole,
+      email: profile.email,
+      full_name: profile.full_name,
+    });
+  }
+
+  if (!eligible.length) {
+    return null;
+  }
+
+  eligible.sort((a, b) => {
+    const byRole = priority[a.role] - priority[b.role];
+    if (byRole !== 0) return byRole;
+    return a.email.localeCompare(b.email);
+  });
+
+  return eligible[0];
 };
 
 Deno.serve(async (req) => {
@@ -124,7 +316,7 @@ Deno.serve(async (req) => {
     const from = Deno.env.get("RESEND_FROM_EMAIL") || "Prumo <noreply@prumo.app>";
 
     if (!supabaseUrl || !serviceRoleKey) {
-      return jsonResponse({ ok: false, message: "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY não configurados." }, 500);
+      return jsonResponse({ ok: false, message: "SUPABASE_URL/SUPABASE_SERVICE_ROLE_KEY nao configurados." }, 500);
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
@@ -132,26 +324,72 @@ Deno.serve(async (req) => {
     const action = normalizeText(payload?.action) as RequestAction;
 
     if (!action) {
-      return jsonResponse({ ok: false, message: "Ação obrigatória." }, 400);
+      return jsonResponse({ ok: false, message: "Acao obrigatoria." }, 400);
+    }
+
+    if (action === "search_companies") {
+      const query = sanitizeIlikeTerm(normalizeText(payload?.query));
+      if (query.length < 3) {
+        return jsonResponse({ ok: true, companies: [] });
+      }
+
+      const slugQuery = slugifyCompany(query);
+      const terms = [`name.ilike.%${query}%`];
+      if (slugQuery) {
+        terms.push(`slug.ilike.%${slugQuery}%`);
+      }
+
+      const companiesRes = await supabase
+        .from("tenants")
+        .select("id, name, slug")
+        .eq("is_active", true)
+        .or(terms.join(","))
+        .limit(8);
+
+      if (companiesRes.error) throw companiesRes.error;
+
+      return jsonResponse({
+        ok: true,
+        companies: (companiesRes.data ?? []).map((item) => ({
+          id: item.id,
+          name: item.name,
+          slug: item.slug,
+        })),
+      });
     }
 
     if (action === "get_request") {
       const token = normalizeText(payload?.token);
       if (!token) {
-        return jsonResponse({ ok: false, message: "Token obrigatório." }, 400);
+        return jsonResponse({ ok: false, message: "Token obrigatorio." }, 400);
       }
 
       const requestRes = await supabase
         .from("access_signup_requests")
         .select(
-          "id, request_type, status, applicant_email, applicant_full_name, company_name, requested_username, requested_job_title, requested_role",
+          "id, request_type, status, applicant_email, applicant_full_name, company_name, requested_username, requested_job_title, requested_role, requested_obra_ids, approver_user_id, tenant_id",
         )
         .eq("approval_token", token)
         .maybeSingle();
 
       if (requestRes.error) throw requestRes.error;
       if (!requestRes.data) {
-        return jsonResponse({ ok: false, message: "Solicitação não encontrada ou expirada." }, 404);
+        return jsonResponse({ ok: false, message: "Solicitacao nao encontrada ou expirada." }, 404);
+      }
+
+      let allowedRoles: AppRole[] = [];
+      if (requestRes.data.approver_user_id && requestRes.data.tenant_id) {
+        const actorCtx = await getActorContext(
+          supabase,
+          requestRes.data.approver_user_id,
+          requestRes.data.tenant_id,
+        );
+        allowedRoles = getAllowedRolesForActor(
+          actorCtx.role,
+          actorCtx.hasUsersManage,
+          actorCtx.obraIds,
+          asUuidList(requestRes.data.requested_obra_ids),
+        );
       }
 
       return jsonResponse({
@@ -166,6 +404,8 @@ Deno.serve(async (req) => {
           requestedUsername: requestRes.data.requested_username,
           requestedJobTitle: requestRes.data.requested_job_title,
           requestedRole: requestRes.data.requested_role,
+          requestedObraIds: asUuidList(requestRes.data.requested_obra_ids),
+          allowedRoles,
         },
       });
     }
@@ -179,7 +419,7 @@ Deno.serve(async (req) => {
       const reviewedRole = normalizeText(payload?.reviewedRole);
 
       if (!token || !decision || !["approve", "reject", "edit"].includes(decision)) {
-        return jsonResponse({ ok: false, message: "Token e decisão válidos são obrigatórios." }, 400);
+        return jsonResponse({ ok: false, message: "Token e decisao validos sao obrigatorios." }, 400);
       }
 
       const requestRes = await supabase
@@ -190,20 +430,49 @@ Deno.serve(async (req) => {
 
       if (requestRes.error) throw requestRes.error;
       if (!requestRes.data) {
-        return jsonResponse({ ok: false, message: "Solicitação não encontrada." }, 404);
+        return jsonResponse({ ok: false, message: "Solicitacao nao encontrada." }, 404);
       }
       if (requestRes.data.status !== "pending") {
-        return jsonResponse({ ok: false, message: "Solicitação já processada." }, 409);
+        return jsonResponse({ ok: false, message: "Solicitacao ja processada." }, 409);
       }
 
       if (requestRes.data.request_type !== "company_internal") {
-        return jsonResponse({ ok: false, message: "Somente solicitações internas exigem revisão." }, 400);
+        return jsonResponse({ ok: false, message: "Somente solicitacoes internas exigem revisao." }, 400);
+      }
+
+      if (!requestRes.data.approver_user_id || !requestRes.data.tenant_id) {
+        return jsonResponse({ ok: false, message: "Solicitacao sem aprovador valido." }, 400);
+      }
+
+      const actorCtx = await getActorContext(
+        supabase,
+        requestRes.data.approver_user_id,
+        requestRes.data.tenant_id,
+      );
+
+      const requestedObraIds = asUuidList(requestRes.data.requested_obra_ids);
+      const allowedRoles = getAllowedRolesForActor(
+        actorCtx.role,
+        actorCtx.hasUsersManage,
+        actorCtx.obraIds,
+        requestedObraIds,
+      );
+
+      if (!allowedRoles.length) {
+        return jsonResponse({ ok: false, message: "Aprovador sem permissao para revisar esta solicitacao." }, 403);
       }
 
       const finalUsername = reviewedUsername || requestRes.data.requested_username;
       const finalJobTitle = reviewedJobTitle || requestRes.data.requested_job_title;
       const candidateRole = reviewedRole || requestRes.data.requested_role;
       const finalRole = isValidRole(candidateRole) ? candidateRole : requestRes.data.requested_role;
+
+      if (decision !== "reject" && !allowedRoles.includes(finalRole as AppRole)) {
+        return jsonResponse(
+          { ok: false, message: "Perfil alvo nao permitido para este aprovador." },
+          403,
+        );
+      }
 
       if (decision === "reject") {
         await supabase
@@ -215,7 +484,7 @@ Deno.serve(async (req) => {
           .from("access_signup_requests")
           .update({
             status: "rejected",
-            review_notes: reviewNotes || "Solicitação rejeitada.",
+            review_notes: reviewNotes || "Solicitacao rejeitada.",
             reviewed_at: new Date().toISOString(),
           })
           .eq("id", requestRes.data.id);
@@ -227,15 +496,16 @@ Deno.serve(async (req) => {
             resendApiKey,
             from,
             requestRes.data.applicant_email,
-            "[PRUMO] Solicitação de acesso rejeitada",
-            `<p>Olá, ${requestRes.data.applicant_full_name}.</p><p>Sua solicitação para <b>${requestRes.data.company_name}</b> foi rejeitada.</p><p>Observação: ${reviewNotes || "Sem observações."}</p>`,
+            "[PRUMO] Solicitacao de acesso rejeitada",
+            `<p>Ola, ${requestRes.data.applicant_full_name}.</p><p>Sua solicitacao para <b>${requestRes.data.company_name}</b> foi rejeitada.</p><p>Observacao: ${reviewNotes || "Sem observacoes."}</p>`,
           );
         }
 
         return jsonResponse({
           ok: true,
           status: "rejected",
-          message: "Solicitação rejeitada com sucesso.",
+          message: "Solicitacao rejeitada com sucesso.",
+          allowedRoles,
         });
       }
 
@@ -287,8 +557,8 @@ Deno.serve(async (req) => {
           resendApiKey,
           from,
           requestRes.data.applicant_email,
-          "[PRUMO] Solicitação de acesso aprovada",
-          `<p>Olá, ${requestRes.data.applicant_full_name}.</p><p>Sua solicitação para <b>${requestRes.data.company_name}</b> foi aprovada.</p><p><b>Usuário:</b> ${finalUsername}<br/><b>Cargo:</b> ${finalJobTitle}<br/><b>Perfil:</b> ${finalRole}</p><p>Observação: ${reviewNotes || "Sem observações."}</p>`,
+          "[PRUMO] Solicitacao de acesso aprovada",
+          `<p>Ola, ${requestRes.data.applicant_full_name}.</p><p>Sua solicitacao para <b>${requestRes.data.company_name}</b> foi aprovada.</p><p><b>Usuario:</b> ${finalUsername}<br/><b>Cargo:</b> ${finalJobTitle}<br/><b>Perfil:</b> ${finalRole}</p><p>Observacao: ${reviewNotes || "Sem observacoes."}</p>`,
         );
       }
 
@@ -297,8 +567,9 @@ Deno.serve(async (req) => {
         status: requestStatus,
         message:
           decision === "edit"
-            ? "Solicitação aprovada com edição de usuário/cargo."
-            : "Solicitação aprovada com sucesso.",
+            ? "Solicitacao aprovada com edicao de usuario/cargo."
+            : "Solicitacao aprovada com sucesso.",
+        allowedRoles,
       });
     }
 
@@ -307,12 +578,14 @@ Deno.serve(async (req) => {
     const fullName = normalizeText(payload?.fullName);
     const username = normalizeText(payload?.username);
     const companyName = normalizeText(payload?.companyName);
+    const tenantId = normalizeText(payload?.tenantId);
     const jobTitle = normalizeText(payload?.jobTitle);
     const requestedRoleRaw = normalizeText(payload?.requestedRole);
     const origin = normalizeText(payload?.origin) || "http://localhost:5173";
+    const requestedObraIds = asUuidList(payload?.requestedObraIds);
 
-    if (!email || !password || !fullName || !companyName || !jobTitle) {
-      return jsonResponse({ ok: false, message: "Campos obrigatórios ausentes." }, 200);
+    if (!email || !password || !fullName || !jobTitle) {
+      return jsonResponse({ ok: false, message: "Campos obrigatorios ausentes." }, 200);
     }
     if (password.length < 6) {
       return jsonResponse({ ok: false, message: "A senha precisa ter ao menos 6 caracteres." }, 200);
@@ -321,14 +594,18 @@ Deno.serve(async (req) => {
     const desiredRole: AppRole = isValidRole(requestedRoleRaw) ? requestedRoleRaw : "operacional";
 
     if (action === "register_company") {
-      const slug = slugifyCompany(companyName);
-      if (!slug) {
-        return jsonResponse({ ok: false, message: "Nome de empresa inválido." }, 200);
+      if (!companyName) {
+        return jsonResponse({ ok: false, message: "Nome da empresa e obrigatorio." }, 200);
       }
 
-      const existingTenant = await resolveTenant(supabase, companyName);
+      const slug = slugifyCompany(companyName);
+      if (!slug) {
+        return jsonResponse({ ok: false, message: "Nome de empresa invalido." }, 200);
+      }
+
+      const existingTenant = await resolveTenantByName(supabase, companyName);
       if (existingTenant) {
-        return jsonResponse({ ok: false, message: "Empresa já existe. Use o fluxo de conta interna." }, 200);
+        return jsonResponse({ ok: false, message: "Empresa ja existe. Use o fluxo de conta interna." }, 200);
       }
 
       const authRes = await supabase.auth.admin.createUser({
@@ -340,7 +617,7 @@ Deno.serve(async (req) => {
 
       if (authRes.error || !authRes.data?.user) {
         return jsonResponse(
-          { ok: false, message: authRes.error?.message ?? "Não foi possível criar o usuário da empresa." },
+          { ok: false, message: authRes.error?.message ?? "Nao foi possivel criar o usuario da empresa." },
           200,
         );
       }
@@ -399,6 +676,7 @@ Deno.serve(async (req) => {
           reviewed_at: new Date().toISOString(),
           approver_user_id: userId,
           approver_email: email,
+          requested_obra_ids: requestedObraIds,
         });
         if (requestRes.error) throw requestRes.error;
 
@@ -413,45 +691,38 @@ Deno.serve(async (req) => {
     }
 
     if (action === "register_internal") {
-      const tenant = await resolveTenant(supabase, companyName);
-      if (!tenant) {
+      if (!tenantId) {
+        return jsonResponse({ ok: false, message: "Selecione uma empresa valida antes de enviar." }, 200);
+      }
+
+      const tenant = await resolveTenantById(supabase, tenantId);
+      if (!tenant || !tenant.is_active) {
         return jsonResponse(
-          { ok: false, message: "Empresa não encontrada. Solicite a criação da conta empresa primeiro." },
+          { ok: false, message: "Empresa nao encontrada. Solicite a criacao da conta empresa primeiro." },
           200,
         );
       }
 
-      const approverRolesRes = await supabase
-        .from("user_roles")
-        .select("user_id, role")
-        .eq("tenant_id", tenant.id)
-        .in("role", ["master", "gestor"] as AppRole[]);
-
-      if (approverRolesRes.error) throw approverRolesRes.error;
-
-      const approverIds = (approverRolesRes.data ?? []).map((row) => row.user_id);
-      if (!approverIds.length) {
-        return jsonResponse({ ok: false, message: "A empresa ainda não possui responsável para aprovação." }, 200);
+      if (companyName) {
+        const nameMatches = normalizePlain(companyName) === normalizePlain(tenant.name);
+        const slugMatches = slugifyCompany(companyName) === normalizeText(tenant.slug);
+        if (!nameMatches && !slugMatches) {
+          return jsonResponse(
+            { ok: false, message: "Empresa selecionada nao confere com o nome informado." },
+            200,
+          );
+        }
       }
 
-      const approverProfilesRes = await supabase
-        .from("profiles")
-        .select("user_id, email, full_name, is_active")
-        .eq("tenant_id", tenant.id)
-        .in("user_id", approverIds)
-        .eq("is_active", true);
-
-      if (approverProfilesRes.error) throw approverProfilesRes.error;
-
-      const findByRole = (target: AppRole) => {
-        const candidate = (approverRolesRes.data ?? []).find((row) => row.role === target);
-        if (!candidate) return null;
-        return (approverProfilesRes.data ?? []).find((profile) => profile.user_id === candidate.user_id) ?? null;
-      };
-
-      const approver = findByRole("master") ?? findByRole("gestor");
-      if (!approver?.email) {
-        return jsonResponse({ ok: false, message: "Não foi encontrado e-mail ativo para aprovação na empresa." }, 200);
+      const approver = await pickApprover(supabase, tenant.id, desiredRole, requestedObraIds);
+      if (!approver) {
+        return jsonResponse(
+          {
+            ok: false,
+            message: "Nao ha aprovador elegivel para este perfil/escopo na empresa.",
+          },
+          200,
+        );
       }
 
       const authRes = await supabase.auth.admin.createUser({
@@ -463,7 +734,7 @@ Deno.serve(async (req) => {
 
       if (authRes.error || !authRes.data?.user) {
         return jsonResponse(
-          { ok: false, message: authRes.error?.message ?? "Não foi possível criar usuário interno." },
+          { ok: false, message: authRes.error?.message ?? "Nao foi possivel criar usuario interno." },
           200,
         );
       }
@@ -509,6 +780,7 @@ Deno.serve(async (req) => {
             requested_username: username || fullName,
             requested_job_title: jobTitle,
             requested_role: desiredRole,
+            requested_obra_ids: requestedObraIds,
             tenant_id: tenant.id,
             approver_user_id: approver.user_id,
             approver_email: approver.email,
@@ -523,25 +795,26 @@ Deno.serve(async (req) => {
           resendApiKey,
           from,
           approver.email,
-          `[PRUMO] Nova solicitação de acesso - ${tenant.name}`,
+          `[PRUMO] Nova solicitacao de acesso - ${tenant.name}`,
           `
-          <p>Olá, ${approver.full_name ?? "responsável"}.</p>
-          <p>Foi criada uma solicitação de conta interna para a empresa <b>${tenant.name}</b>.</p>
-          <p><b>Usuário:</b> ${username || fullName}<br/>
+          <p>Ola, ${approver.full_name ?? "responsavel"}.</p>
+          <p>Foi criada uma solicitacao de conta interna para a empresa <b>${tenant.name}</b>.</p>
+          <p><b>Usuario:</b> ${username || fullName}<br/>
           <b>E-mail:</b> ${email}<br/>
           <b>Cargo:</b> ${jobTitle}<br/>
           <b>Perfil:</b> ${desiredRole}</p>
           <p><a href="${reviewUrl}">Clique aqui para aprovar, rejeitar ou editar</a>.</p>
-          <p>A senha do usuário não é compartilhada neste processo.</p>
+          <p>A senha do usuario nao e compartilhada neste processo.</p>
           `,
         );
 
         return jsonResponse({
           ok: true,
-          message: "Solicitação enviada para aprovação da empresa.",
+          message: "Solicitacao enviada para aprovacao da empresa.",
           requestId: requestRes.data.id,
           emailSent: emailRes.ok,
           emailWarning: emailRes.reason,
+          approverRole: approver.role,
         });
       } catch (error) {
         await supabase.auth.admin.deleteUser(userId);
@@ -549,13 +822,13 @@ Deno.serve(async (req) => {
       }
     }
 
-    return jsonResponse({ ok: false, message: "Ação inválida." }, 400);
+    return jsonResponse({ ok: false, message: "Acao invalida." }, 400);
   } catch (error) {
     const payload = toErrorPayload(error);
     return jsonResponse(
       {
         ok: false,
-        message: "Erro interno ao processar solicitação.",
+        message: "Erro interno ao processar solicitacao.",
         error: payload.message,
         details: payload.details,
         hint: payload.hint,
