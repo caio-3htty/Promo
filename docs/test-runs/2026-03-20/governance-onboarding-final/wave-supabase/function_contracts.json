@@ -1,0 +1,25 @@
+{
+  "generatedAt": "2026-03-20T20:45:12.134Z",
+  "searchCompanies": {
+    "status": 200,
+    "ok": true,
+    "count": 1
+  },
+  "registerInternalMissingTenant": {
+    "status": 200,
+    "ok": false,
+    "message": "Selecione uma empresa valida antes de enviar."
+  },
+  "adminProvisionNoAuth": {
+    "status": 401,
+    "message": "Authorization Bearer token obrigatorio."
+  },
+  "authLogin": {
+    "status": 200,
+    "ok": true
+  },
+  "adminProvisionWithAuthInvalidPayload": {
+    "status": 400,
+    "message": "Campos obrigatorios ausentes para provisionamento."
+  }
+}

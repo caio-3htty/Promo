@@ -23,6 +23,7 @@ Status final permitido: `APROVADO` ou `BLOQUEADO`.
 ## Evidencias locais
 - Pass 1: `docs/test-runs/2026-03-15/final-pass-1/summary.md`
 - Pass 2: `docs/test-runs/2026-03-15/final-pass-2/summary.md`
+- Governance onboarding final: `docs/test-runs/2026-03-20/governance-onboarding-final/summary.md`
 - Historico: `docs/test-runs/status-history.md`
 
 ## Links de CI remoto (executado)
@@ -53,3 +54,9 @@ Status final permitido: `APROVADO` ou `BLOQUEADO`.
 - Resultado final: `APROVADO`
 - Riscos residuais:
   - Manter monitoramento continuo de RBAC/smoke e custo de build desktop em cada release.
+
+## Patch de governanca/onboarding
+- Data: 2026-03-20
+- Patch: governance-onboarding-final
+- Resultado: `APROVADO`
+- Evidencia: `docs/test-runs/2026-03-20/governance-onboarding-final/summary.md`
