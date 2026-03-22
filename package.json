@@ -25,6 +25,8 @@
     "android:build": "npm run android:doctor && node scripts/android-gradle.mjs lintDebug testDebugUnitTest assembleDebug",
     "supabase:test": "node scripts/test-supabase.mjs",
     "supabase:validate:access": "node scripts/validate-access-login.mjs",
+    "smoke:cross-app": "node scripts/smoke-cross-app.mjs",
+    "smoke:cross-app:write": "node scripts/smoke-cross-app.mjs --write",
     "smoke:rbac": "node scripts/smoke-rbac-provision.mjs",
     "alerts:dispatch": "node scripts/process-critical-alerts.mjs",
     "alerts:dispatch:dry": "node scripts/process-critical-alerts.mjs --dry-run",

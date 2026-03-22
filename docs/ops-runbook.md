@@ -63,6 +63,8 @@ npm --prefix promo_APP_OwnerWindows run build
 npm run env:doctor
 npm run supabase:test
 npm run supabase:validate:access
+npm run smoke:cross-app
+npm run smoke:cross-app:write
 npm run smoke:rbac
 npm run alerts:dispatch:dry
 npm run alerts:dispatch
@@ -88,6 +90,8 @@ npm run android:build
 ## Diagnostico de banco e login
 - `npm run supabase:test`: valida `connectivity`, `auth` e `read` com saida estruturada.
 - `npm run supabase:validate:access`: valida login real, profile/tenant, leitura minima e sanity da edge function `account-access-request`.
+- `npm run smoke:cross-app`: roda os checks de leitura (sem escrita).
+- `npm run smoke:cross-app:write`: roda leitura + smoke write isolado (tenant temporario com limpeza automatica).
 - Erros esperados mapeados:
   - credencial invalida,
   - usuario sem profile/tenant,
