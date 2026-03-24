@@ -1,4 +1,4 @@
-import { PDFDocument, StandardFonts, rgb } from "npm:pdf-lib@1.17.1";
+﻿import { PDFDocument, StandardFonts, rgb } from "npm:pdf-lib@1.17.1";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.4";
 
 const corsHeaders = {
@@ -19,6 +19,14 @@ function jsonToLines(payload: any): string[] {
   const fornecedor = payload?.fornecedor ?? {};
   const prazos = payload?.prazos ?? {};
   const eventos = payload?.eventos ?? [];
+  const incidentes = payload?.incidentes_substituicao ?? [];
+
+  const atrasoEntrega =
+    prazos?.prazo_entrega_previsto && prazos?.prazo_entrega_real
+      ? new Date(prazos.prazo_entrega_real).getTime() - new Date(prazos.prazo_entrega_previsto).getTime()
+      : null;
+
+  const atrasoDias = atrasoEntrega !== null ? Math.round(atrasoEntrega / (1000 * 60 * 60 * 24)) : null;
 
   return [
     `Pedido: ${String(pedido.id ?? "-").slice(0, 8)}`,
@@ -26,20 +34,34 @@ function jsonToLines(payload: any): string[] {
     `Material: ${material.nome ?? "-"}`,
     `Fornecedor: ${fornecedor.nome ?? "-"}`,
     `Status: ${pedido.status ?? "-"}`,
+    `Codigo compra: ${pedido.codigo_compra ?? "-"}`,
     `Quantidade: ${pedido.quantidade ?? "-"}`,
     `Preco unit.: ${pedido.preco_unit ?? "-"}`,
     `Total: ${pedido.total ?? "-"}`,
     "",
-    "Prazos previstos:",
-    `- MRV: ${prazos.prazo_aprovacao_mrv_previsto ?? "-"}`,
-    `- Fornecedor: ${prazos.prazo_aprovacao_fornecedor_previsto ?? "-"}`,
-    `- Producao: ${prazos.prazo_producao_previsto ?? "-"}`,
-    `- Entrega: ${prazos.prazo_entrega_previsto ?? "-"}`,
-    `- Frete/munk: ${prazos.requer_frete_munk ? "sim" : "nao"}`,
-    `- Agendar frete ate: ${prazos.prazo_agendar_frete_em ?? "-"}`,
+    "Datas previstas vs reais:",
+    `- Aprovacao MRV (prev/real): ${prazos.prazo_aprovacao_mrv_previsto ?? "-"} / ${prazos.prazo_aprovacao_mrv_real ?? "-"}`,
+    `- Aprovacao fornecedor (prev/real): ${prazos.prazo_aprovacao_fornecedor_previsto ?? "-"} / ${prazos.prazo_aprovacao_fornecedor_real ?? "-"}`,
+    `- Producao (prev/real): ${prazos.prazo_producao_previsto ?? "-"} / ${prazos.prazo_producao_real ?? "-"}`,
+    `- Entrega (prev/real): ${prazos.prazo_entrega_previsto ?? "-"} / ${prazos.prazo_entrega_real ?? "-"}`,
+    `- Atraso entrega (dias): ${atrasoDias ?? "-"}`,
     "",
-    "Eventos:",
-    ...eventos.slice(0, 25).map((event: any) => `- ${event.created_at ?? "-"} | ${event.tipo ?? "-"} | ${event.descricao ?? ""}`),
+    "Substituicoes:",
+    ...(incidentes.length
+      ? incidentes.slice(0, 10).map((inc: any) => {
+          const impacto =
+            (Number(inc?.custo_substituto_unit ?? 0) - Number(inc?.custo_planejado_unit ?? 0)) * Number(inc?.quantidade_substituto ?? 0);
+          return `- ${inc?.created_at ?? "-"} | status=${inc?.status ?? "-"} | impacto=${impacto.toFixed(2)} | motivo=${inc?.motivo ?? "-"}`;
+        })
+      : ["- Sem substituicoes registradas"]),
+    "",
+    "Eventos e responsaveis:",
+    ...(eventos.length
+      ? eventos.slice(0, 25).map((event: any) => {
+          const by = event?.criado_por ? String(event.criado_por).slice(0, 8) : "sistema";
+          return `- ${event?.created_at ?? "-"} | ${event?.tipo ?? "-"} | por ${by} | ${event?.descricao ?? ""}`;
+        })
+      : ["- Sem eventos registrados"]),
   ];
 }
 
@@ -85,7 +107,7 @@ Deno.serve(async (req) => {
     const from = Deno.env.get("RESEND_FROM_EMAIL") || "Prumo <noreply@prumo.app>";
 
     const payload = (await req.json()) as RequestPayload;
-    if (!payload.pedidoId) throw new Error("pedidoId é obrigatório");
+    if (!payload.pedidoId) throw new Error("pedidoId e obrigatorio");
 
     const supabase = createClient(supabaseUrl, serviceRoleKey, { auth: { persistSession: false } });
 
@@ -102,7 +124,7 @@ Deno.serve(async (req) => {
     const pdfBase64 = btoa(binary);
 
     if (payload.to) {
-      if (!resendApiKey) throw new Error("RESEND_API_KEY não configurada");
+      if (!resendApiKey) throw new Error("RESEND_API_KEY nao configurada");
       const resendResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
         headers: {
@@ -112,8 +134,8 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           from,
           to: [payload.to],
-          subject: payload.subject ?? `[PRUMO] Relatório do pedido ${payload.pedidoId.slice(0, 8)}`,
-          html: "<p>Segue relatório PDF do pedido.</p>",
+          subject: payload.subject ?? `[PRUMO] Relatorio do pedido ${payload.pedidoId.slice(0, 8)}`,
+          html: "<p>Segue relatorio PDF do pedido.</p>",
           attachments: [
             {
               filename: `pedido-${payload.pedidoId.slice(0, 8)}.pdf`,
@@ -141,6 +163,3 @@ Deno.serve(async (req) => {
     });
   }
 });
-
-
-
