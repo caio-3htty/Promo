@@ -53,6 +53,15 @@ const report = {
   },
 };
 
+const EMPTY_TENANT_TABLES = [
+  "obras",
+  "pedidos_compra",
+  "materiais",
+  "fornecedores",
+  "estoque_obra_material",
+  "notificacoes",
+];
+
 const mask = (value) => {
   if (!value || typeof value !== "string") return value;
   if (value.length < 10) return "***";
@@ -120,6 +129,20 @@ const deleteAuthUser = (userId) =>
 
 const assert = (condition, message) => {
   if (!condition) throw new Error(message);
+};
+
+const assertTenantStartsEmpty = async (tenantId) => {
+  const counts = {};
+  for (const table of EMPTY_TENANT_TABLES) {
+    const res = await restService(
+      `${table}?select=id&tenant_id=eq.${encodeURIComponent(tenantId)}&limit=1`,
+    );
+    assert(res.ok, `falha ao consultar tabela ${table} (${res.status})`);
+    const rows = Array.isArray(res.data) ? res.data.length : 0;
+    assert(rows === 0, `tenant novo com dados preexistentes em ${table}`);
+    counts[table] = rows;
+  }
+  return counts;
 };
 
 const addScenario = async (name, run) => {
@@ -200,11 +223,13 @@ try {
       !JSON.stringify(requestAudit.data[0]).toLowerCase().includes("password"),
       "vazamento de senha no payload de auditoria",
     );
+    const emptyCoreCounts = await assertTenantStartsEmpty(state.tenantId);
 
     return {
       tenantId: mask(state.tenantId),
       ownerUserId: mask(state.ownerUserId),
       requestId: mask(requestAudit.data[0].id),
+      emptyCoreCounts,
     };
   });
 

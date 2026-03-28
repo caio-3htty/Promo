@@ -93,6 +93,10 @@ function encodeFilterValue(value) {
   return encodeURIComponent(value);
 }
 
+function assertCondition(condition, message) {
+  if (!condition) throw new Error(message);
+}
+
 async function adminListUsers() {
   const res = await requestJson(`${BASE_URL}/auth/v1/admin/users?page=1&per_page=1000`, {
     method: "GET",
@@ -399,6 +403,42 @@ async function main() {
     return created;
   });
 
+  await check("Consistencia inicial de materiais e pedido (tenant/obra)", async () => {
+    assertCondition(created.fornecedorId && created.materialId && created.pedidoAId, "ids base ausentes");
+
+    const fornecedor = await restService(
+      `fornecedores?select=id,tenant_id&tenant_id=eq.${encodeFilterValue(TENANT_ID)}&id=eq.${encodeFilterValue(created.fornecedorId)}&limit=1`,
+    );
+    const material = await restService(
+      `materiais?select=id,tenant_id&tenant_id=eq.${encodeFilterValue(TENANT_ID)}&id=eq.${encodeFilterValue(created.materialId)}&limit=1`,
+    );
+    const pedido = await restService(
+      `pedidos_compra?select=id,tenant_id,obra_id,status,material_id,fornecedor_id&tenant_id=eq.${encodeFilterValue(TENANT_ID)}&id=eq.${encodeFilterValue(created.pedidoAId)}&limit=1`,
+    );
+
+    if (!fornecedor.ok || !material.ok || !pedido.ok) {
+      throw new Error(
+        `consulta de consistencia falhou fornecedor=${fornecedor.status} material=${material.status} pedido=${pedido.status}`,
+      );
+    }
+
+    assertCondition((fornecedor.data || []).length === 1, "fornecedor inconsistente");
+    assertCondition((material.data || []).length === 1, "material inconsistente");
+    assertCondition((pedido.data || []).length === 1, "pedido inconsistente");
+
+    const pedidoRow = pedido.data[0];
+    assertCondition(pedidoRow.obra_id === obraA.id, "pedido sem obra esperada");
+    assertCondition(pedidoRow.material_id === created.materialId, "pedido sem material esperado");
+    assertCondition(pedidoRow.fornecedor_id === created.fornecedorId, "pedido sem fornecedor esperado");
+
+    return {
+      fornecedorTenantOk: true,
+      materialTenantOk: true,
+      pedidoTenantObraOk: true,
+      statusInicialPedido: pedidoRow.status,
+    };
+  });
+
   await check("Operacional define prazos por etapa na obra A", async () => {
     if (!created.pedidoAId) throw new Error("pedidoAId missing");
     const token = sessions.operacional.access_token;
@@ -602,6 +642,31 @@ async function main() {
     return { id: res.data.id, status: res.data.status, ack_em: res.data.ack_em };
   });
 
+  await check("Notificacao ACK consistente com tenant/obra/pedido", async () => {
+    if (!created.notificationAId || !created.pedidoAId) {
+      throw new Error("notification/pedido id missing");
+    }
+
+    const notification = await restService(
+      `notificacoes?select=id,status,ack_em,tenant_id,obra_id,pedido_id&tenant_id=eq.${encodeFilterValue(TENANT_ID)}&id=eq.${encodeFilterValue(created.notificationAId)}&limit=1`,
+    );
+    if (!notification.ok) {
+      throw new Error(`consulta notificacao falhou: ${notification.status} ${JSON.stringify(notification.data)}`);
+    }
+    assertCondition((notification.data || []).length === 1, "notificacao nao encontrada no tenant");
+    const row = notification.data[0];
+    assertCondition(row.obra_id === obraA.id, "notificacao sem obra esperada");
+    assertCondition(row.pedido_id === created.pedidoAId, "notificacao sem pedido esperado");
+    assertCondition(row.status === "acknowledged", `status inesperado apos ack: ${row.status}`);
+    assertCondition(!!row.ack_em, "ack_em ausente apos reconhecimento");
+
+    return {
+      status: row.status,
+      ackEmPresent: true,
+      tenantScopeOk: true,
+    };
+  });
+
   await check("Almoxarife nao le pedidos da obra A", async () => {
     const token = sessions.almoxarife.access_token;
     const res = await restUser(
@@ -707,6 +772,27 @@ async function main() {
 
     if (!ins.ok) throw new Error(`insert estoque failed: ${ins.status} ${JSON.stringify(ins.data)}`);
     return { mode: "insert", id: ins.data[0].id };
+  });
+
+  await check("Estoque da obra B consistente apos atualizacao", async () => {
+    const token = sessions.almoxarife.access_token;
+    const estoque = await restUser(
+      `estoque_obra_material?select=id,tenant_id,obra_id,material_id,estoque_atual&tenant_id=eq.${encodeFilterValue(TENANT_ID)}&obra_id=eq.${encodeFilterValue(obraB.id)}&material_id=eq.${encodeFilterValue(created.materialId)}&limit=1`,
+      token,
+    );
+
+    if (!estoque.ok) throw new Error(`query estoque consistency failed: ${estoque.status}`);
+    assertCondition((estoque.data || []).length === 1, "estoque da obra B nao localizado");
+    const row = estoque.data[0];
+    assertCondition(Number(row.estoque_atual) >= 1, "estoque_atual invalido apos update");
+    assertCondition(row.tenant_id === TENANT_ID, "tenant_id inconsistente no estoque");
+    assertCondition(row.obra_id === obraB.id, "obra_id inconsistente no estoque");
+    assertCondition(row.material_id === created.materialId, "material_id inconsistente no estoque");
+
+    return {
+      estoqueAtual: Number(row.estoque_atual),
+      tenantScopeOk: true,
+    };
   });
 
   const ok = report.filter((item) => item.ok).length;

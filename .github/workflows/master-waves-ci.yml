@@ -62,8 +62,11 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: npm
+
+      - name: Runtime baseline gate (Node/npm)
+        run: node scripts/env-doctor.mjs --node-only
 
       - name: Setup Java 17
         uses: actions/setup-java@v4

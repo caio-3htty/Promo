@@ -22,6 +22,30 @@ Workspace de orquestracao do ecossistema Promo.
 - Node.js 20+
 - npm 10+
 
+## Bootstrap local (obrigatorio)
+Windows (recomendado, com NVM):
+```bash
+winget install CoreyButler.NVMforWindows
+nvm install 20
+nvm use 20
+npm i -g npm@10
+node -v
+npm -v
+npm run env:doctor
+```
+
+Sem NVM, instale Node LTS diretamente e confirme:
+```bash
+node -v
+npm -v
+npm run env:doctor
+```
+
+Regra operacional:
+- toda validacao completa do workspace deve iniciar em `npm run env:doctor`.
+- apos instalar/atualizar Node, reinicie o terminal.
+- se `node -v` continuar em 18 por causa de `C:\Program Files\nodejs`, atualize/remova essa instalacao antiga (elevacao) ou use o PATH sugerido pelo `env:doctor`.
+
 ```bash
 nvm use
 ```

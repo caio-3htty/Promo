@@ -1,5 +1,22 @@
 # Ops Runbook (Promo)
 
+## Pre-check obrigatorio (sempre primeiro)
+```bash
+npm run env:doctor
+```
+
+Se falhar por Node/npm:
+```bash
+winget install CoreyButler.NVMforWindows
+nvm install 20
+nvm use 20
+npm i -g npm@10
+npm run env:doctor
+```
+Observacoes:
+- reinicie o terminal apos instalacao/upgrade do Node.
+- se o shell continuar usando `C:\\Program Files\\nodejs` com Node 18, atualize/remova a instalacao antiga (elevacao) ou aplique o PATH sugerido pelo `env:doctor`.
+
 ## Build e validacao minima por app
 
 ### Web (`promo_APP_Web`)
@@ -67,6 +84,7 @@ npm run smoke:web:signup
 npm run smoke:cross-app
 npm run smoke:cross-app:write
 npm run smoke:rbac
+npm run smoke:internal:full
 npm run alerts:dispatch:dry
 npm run alerts:dispatch
 npm run windows:build
@@ -91,9 +109,10 @@ npm run android:build
 ## Diagnostico de banco e login
 - `npm run supabase:test`: valida `connectivity`, `auth` e `read` com saida estruturada.
 - `npm run supabase:validate:access`: valida login real, profile/tenant, leitura minima e sanity da edge function `account-access-request`.
-- `npm run smoke:web:signup`: valida cadastro web de conta empresa + conta interna (com revisao/edicao), validacoes de campos e cleanup isolado.
+- `npm run smoke:web:signup`: valida cadastro web de conta empresa + conta interna (com revisao/edicao), inclui check de tenant novo sem dados operacionais no inicio e cleanup isolado.
 - `npm run smoke:cross-app`: roda os checks de leitura (sem escrita).
 - `npm run smoke:cross-app:write`: roda leitura + smoke write isolado (tenant temporario com limpeza automatica).
+- `npm run smoke:internal:full`: orquestra `smoke:web:signup` + `smoke:rbac` + `alerts:dispatch:dry` e gera relatorio unico em `docs/reports/`.
 - Erros esperados mapeados:
   - credencial invalida,
   - usuario sem profile/tenant,
