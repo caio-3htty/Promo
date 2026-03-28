@@ -15,7 +15,7 @@
     "web:build": "npm --prefix promo_APP_Web run build",
     "env:doctor": "node scripts/env-doctor.mjs",
     "clean": "node scripts/clean-root.mjs",
-    "clean:all": "npm run clean && npm --prefix promo_APP_Web run clean --if-present && npm --prefix promo_APP_OwnerWindows run clean --if-present && npm --prefix promo_APP_Windows run clean --if-present && node scripts/clean-android-native.mjs",
+    "clean:all": "node scripts/clean-all.mjs",
     "owner:build": "npm --prefix promo_APP_OwnerWindows run build",
     "windows:build": "npm --prefix promo_APP_Windows run desktop:build:win",
     "linux:build": "node scripts/linux-build.mjs",

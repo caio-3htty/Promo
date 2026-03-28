@@ -51,6 +51,10 @@ npm run clean
 npm run clean:all
 ```
 
+Fluxo canonico:
+- `npm run clean`: limpa apenas artefatos locais da raiz.
+- `npm run clean:all`: limpa raiz + apps detectados no workspace (web, windows, linux, owner e android nativo), com skip automatico para pastas ausentes.
+
 ## Code Hygiene Pass
 ```bash
 npm run cleanup:web

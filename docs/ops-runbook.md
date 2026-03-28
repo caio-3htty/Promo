@@ -72,6 +72,14 @@ npm run android:doctor
 npm run android:build
 ```
 
+## Limpeza canonica (workspace)
+```bash
+npm run clean
+npm run clean:all
+```
+- `clean`: remove artefatos da raiz.
+- `clean:all`: remove artefatos da raiz e executa limpeza dos apps presentes no workspace, com fallback seguro quando uma pasta nao existir.
+
 ## Variaveis de ambiente de smoke
 - `SUPABASE_PROJECT_REF`
 - `SUPABASE_URL`
