@@ -39,9 +39,11 @@
   - Acao recomendada: atualizar para Node 20+ e npm 10+ para alinhamento total do contrato.
 
 ## Commits e higiene Git
-| Repo | Commit | Git status |
+Snapshot coletado ao final dos testes, antes do commit deste relatorio.
+
+| Repo | Commit (snapshot) | Git status |
 |---|---|---|
-| Promo | `2a3d6dd` | clean |
+| Promo | `0b45e51` | clean |
 | promo_APP_Web | `f132d13` | clean |
 | promo_APP_Windows | `42ed45b` | clean |
 | promo_APP_Linux | `905c7fa` | clean |
