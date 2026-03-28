@@ -106,6 +106,9 @@ npm run android:build
 - `RESEND_FROM_EMAIL`
 - `CRITICAL_ALERT_FALLBACK_EMAIL` (opcional)
 
+Pre-requisito de cadastro:
+- `register_company` e `register_internal` exigem envio de e-mail; sem `RESEND_API_KEY` o cadastro e bloqueado.
+
 ## Diagnostico de banco e login
 - `npm run supabase:test`: valida `connectivity`, `auth` e `read` com saida estruturada.
 - `npm run supabase:validate:access`: valida login real, profile/tenant, leitura minima e sanity da edge function `account-access-request`.

@@ -44,6 +44,7 @@ type AppErrorCode =
   | "register_company_exists"
   | "register_company_name_required"
   | "register_company_name_invalid"
+  | "email_delivery_failed"
   | "auth_user_create_failed"
   | "required_fields_missing"
   | "password_too_short"
@@ -316,6 +317,96 @@ const sendResendEmail = async (
   }
 
   return { ok: true, reason: null };
+};
+
+const rollbackCompanyRegistration = async (
+  supabase: ReturnType<typeof createClient>,
+  userId: string,
+  tenantId: string,
+) => {
+  const issues: string[] = [];
+
+  const runStep = async (
+    label: string,
+    operation: () => Promise<{ error: { message?: string } | null }>,
+  ) => {
+    try {
+      const result = await operation();
+      if (result.error) {
+        issues.push(`${label}: ${result.error.message ?? "erro desconhecido"}`);
+      }
+    } catch (error) {
+      issues.push(`${label}: ${String(error)}`);
+    }
+  };
+
+  await runStep("access_signup_requests", () =>
+    supabase.from("access_signup_requests").delete().eq("applicant_user_id", userId),
+  );
+  await runStep("user_obras", () =>
+    supabase.from("user_obras").delete().eq("user_id", userId).eq("tenant_id", tenantId),
+  );
+  await runStep("user_roles", () =>
+    supabase.from("user_roles").delete().eq("user_id", userId).eq("tenant_id", tenantId),
+  );
+  await runStep("profiles", () =>
+    supabase.from("profiles").delete().eq("user_id", userId),
+  );
+  await runStep("tenant_settings", () =>
+    supabase.from("tenant_settings").delete().eq("tenant_id", tenantId),
+  );
+  await runStep("audit_log", () =>
+    supabase.from("audit_log").delete().eq("tenant_id", tenantId),
+  );
+  await runStep("user_type_permissions", () =>
+    supabase.from("user_type_permissions").delete().eq("tenant_id", tenantId),
+  );
+  await runStep("user_types", () =>
+    supabase.from("user_types").delete().eq("tenant_id", tenantId),
+  );
+  await runStep("tenants", () =>
+    supabase.from("tenants").delete().eq("id", tenantId),
+  );
+
+  try {
+    const deleteAuthRes = await supabase.auth.admin.deleteUser(userId);
+    if (deleteAuthRes.error) {
+      issues.push(`auth_user: ${deleteAuthRes.error.message ?? "erro desconhecido"}`);
+    }
+  } catch (error) {
+    issues.push(`auth_user: ${String(error)}`);
+  }
+
+  const [tenantResidueRes, profileResidueRes, authResidueRes] = await Promise.all([
+    supabase.from("tenants").select("id").eq("id", tenantId).limit(1),
+    supabase.from("profiles").select("user_id").eq("user_id", userId).limit(1),
+    supabase.auth.admin.getUserById(userId),
+  ]);
+
+  if (tenantResidueRes.error) {
+    issues.push(`verify_tenant: ${tenantResidueRes.error.message ?? "erro desconhecido"}`);
+  } else if ((tenantResidueRes.data ?? []).length > 0) {
+    issues.push("verify_tenant: tenant ainda existe");
+  }
+
+  if (profileResidueRes.error) {
+    issues.push(`verify_profile: ${profileResidueRes.error.message ?? "erro desconhecido"}`);
+  } else if ((profileResidueRes.data ?? []).length > 0) {
+    issues.push("verify_profile: profile ainda existe");
+  }
+
+  if (authResidueRes.error && !/not found/i.test(authResidueRes.error.message ?? "")) {
+    issues.push(`verify_auth_user: ${authResidueRes.error.message ?? "erro desconhecido"}`);
+  }
+
+  if (authResidueRes.data?.user) {
+    issues.push("verify_auth_user: usuario auth ainda existe");
+  }
+
+  return {
+    ok: issues.length === 0,
+    issues,
+  };
 };
 
 const resolveTenantById = async (supabase: ReturnType<typeof createClient>, tenantId: string) => {
@@ -1159,6 +1250,7 @@ Deno.serve(async (req) => {
       }
 
       const userId = authRes.data.user.id;
+      let createdTenantId: string | null = null;
 
       try {
         const tenantRes = await supabase
@@ -1168,6 +1260,7 @@ Deno.serve(async (req) => {
           .single();
 
         if (tenantRes.error) throw tenantRes.error;
+        createdTenantId = tenantRes.data.id;
         const userTypeByRole = {} as Record<AppRole, string>;
         for (const role of ALL_ROLES) {
           userTypeByRole[role] = await ensureUserTypeForRole(supabase, tenantRes.data.id, role);
@@ -1224,12 +1317,48 @@ Deno.serve(async (req) => {
         });
         if (requestRes.error) throw requestRes.error;
 
+        const emailRes = await sendResendEmail(
+          resendApiKey,
+          from,
+          email,
+          `[PRUMO] Conta empresa criada - ${companyName}`,
+          `
+          <p>Ola, ${fullName}.</p>
+          <p>Sua conta empresa foi criada com sucesso em <b>${companyName}</b>.</p>
+          <p><b>Usuario:</b> ${username || fullName}<br/>
+          <b>E-mail:</b> ${email}<br/>
+          <b>Cargo:</b> ${jobTitle}<br/>
+          <b>Perfil:</b> master</p>
+          <p>Voce ja pode acessar a plataforma com as credenciais cadastradas.</p>
+          <p>Por seguranca, sua senha nao e enviada por e-mail.</p>
+          `,
+        );
+
+        if (!emailRes.ok) {
+          const rollbackRes = await rollbackCompanyRegistration(supabase, userId, tenantRes.data.id);
+          return businessError(
+            "email_delivery_failed",
+            "Conta empresa nao foi concluida porque o e-mail de boas-vindas nao pode ser enviado.",
+            {
+              emailSent: false,
+              emailWarning: emailRes.reason,
+              rollbackStatus: rollbackRes.ok ? "completed" : "partial",
+              rollbackIssues: rollbackRes.ok ? [] : rollbackRes.issues,
+            },
+          );
+        }
+
         return jsonResponse({
           ok: true,
           message: "Conta empresa criada com sucesso.",
+          emailSent: true,
         });
       } catch (error) {
-        await supabase.auth.admin.deleteUser(userId);
+        if (createdTenantId) {
+          await rollbackCompanyRegistration(supabase, userId, createdTenantId);
+        } else {
+          await supabase.auth.admin.deleteUser(userId);
+        }
         throw error;
       }
     }
