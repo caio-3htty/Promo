@@ -41,7 +41,7 @@
 ## Commits e higiene Git
 | Repo | Commit | Git status |
 |---|---|---|
-| Promo | `0b45e51` | clean |
+| Promo | `2a3d6dd` | clean |
 | promo_APP_Web | `f132d13` | clean |
 | promo_APP_Windows | `42ed45b` | clean |
 | promo_APP_Linux | `905c7fa` | clean |
