@@ -63,6 +63,7 @@ npm --prefix promo_APP_OwnerWindows run build
 npm run env:doctor
 npm run supabase:test
 npm run supabase:validate:access
+npm run smoke:web:signup
 npm run smoke:cross-app
 npm run smoke:cross-app:write
 npm run smoke:rbac
@@ -90,6 +91,7 @@ npm run android:build
 ## Diagnostico de banco e login
 - `npm run supabase:test`: valida `connectivity`, `auth` e `read` com saida estruturada.
 - `npm run supabase:validate:access`: valida login real, profile/tenant, leitura minima e sanity da edge function `account-access-request`.
+- `npm run smoke:web:signup`: valida cadastro web de conta empresa + conta interna (com revisao/edicao), validacoes de campos e cleanup isolado.
 - `npm run smoke:cross-app`: roda os checks de leitura (sem escrita).
 - `npm run smoke:cross-app:write`: roda leitura + smoke write isolado (tenant temporario com limpeza automatica).
 - Erros esperados mapeados:
@@ -97,6 +99,15 @@ npm run android:build
   - usuario sem profile/tenant,
   - usuario inativo,
   - problema de chave/ambiente.
+
+## Publicacao da edge function (manual)
+Para publicar alteracoes em `account-access-request` em producao:
+```bash
+npx supabase@2.84.4 functions deploy account-access-request --project-ref <SUPABASE_PROJECT_REF>
+```
+Requisitos:
+- `SUPABASE_ACCESS_TOKEN` configurado no ambiente (ou `supabase login` previamente executado).
+- Em ambientes com Node 18 pode haver warnings de engine; deploy pode prosseguir.
 
 ## Politica de commit
 - Nao commitar build artifacts e caches.

@@ -88,6 +88,78 @@ const FIELD_LIMITS = {
   phone: { min: 10, max: 13 },
 } as const;
 
+const ROLE_DEFAULTS: Record<
+  AppRole,
+  { name: string; description: string; permissionKeys: string[] | "ALL" }
+> = {
+  master: {
+    name: "Master",
+    description: "Administrador master da empresa",
+    permissionKeys: "ALL",
+  },
+  gestor: {
+    name: "Gestor",
+    description: "Gestao geral",
+    permissionKeys: [
+      "users.manage",
+      "audit.view",
+      "obras.view",
+      "obras.manage",
+      "fornecedores.view",
+      "fornecedores.manage",
+      "materiais.view",
+      "materiais.manage",
+      "material_fornecedor.view",
+      "material_fornecedor.manage",
+      "pedidos.view",
+      "pedidos.create",
+      "pedidos.edit_base",
+      "pedidos.approve",
+      "pedidos.receive",
+      "pedidos.delete",
+      "estoque.view",
+      "estoque.manage",
+    ],
+  },
+  operacional: {
+    name: "Operacional",
+    description: "Opera cadastros e pedidos",
+    permissionKeys: [
+      "obras.view",
+      "fornecedores.view",
+      "fornecedores.manage",
+      "materiais.view",
+      "materiais.manage",
+      "material_fornecedor.view",
+      "material_fornecedor.manage",
+      "pedidos.view",
+      "pedidos.create",
+      "pedidos.edit_base",
+    ],
+  },
+  engenheiro: {
+    name: "Engenheiro",
+    description: "Acompanha e aprova pedidos",
+    permissionKeys: [
+      "obras.view",
+      "pedidos.view",
+      "pedidos.approve",
+      "estoque.view",
+    ],
+  },
+  almoxarife: {
+    name: "Almoxarife",
+    description: "Recebimento e estoque",
+    permissionKeys: [
+      "obras.view",
+      "pedidos.view",
+      "pedidos.receive",
+      "estoque.view",
+      "estoque.manage",
+    ],
+  },
+};
+
 const HAS_ALNUM_REGEX = /[\p{L}\p{N}]/u;
 const HAS_LETTER_REGEX = /\p{L}/u;
 const FULL_NAME_ALLOWED_REGEX = /^[\p{L}\s'-]+$/u;
@@ -298,6 +370,98 @@ const resolveUserTypeForRole = async (
 
   if (result.error) throw result.error;
   return result.data?.id ?? null;
+};
+
+const ensureUserTypePermissions = async (
+  supabase: ReturnType<typeof createClient>,
+  tenantId: string,
+  userTypeId: string,
+  role: AppRole,
+) => {
+  const roleDefaults = ROLE_DEFAULTS[role];
+  let catalogRes;
+  if (roleDefaults.permissionKeys === "ALL") {
+    catalogRes = await supabase
+      .from("permission_catalog")
+      .select("key, obra_scoped")
+      .eq("is_active", true);
+  } else {
+    catalogRes = await supabase
+      .from("permission_catalog")
+      .select("key, obra_scoped")
+      .eq("is_active", true)
+      .in("key", roleDefaults.permissionKeys);
+  }
+
+  if (catalogRes.error) throw catalogRes.error;
+
+  const rows = (catalogRes.data ?? []).map((item) => ({
+    tenant_id: tenantId,
+    user_type_id: userTypeId,
+    permission_key: item.key,
+    scope_type: item.obra_scoped ? "all_obras" : "tenant",
+    is_recommended: true,
+  }));
+
+  if (rows.length === 0) {
+    return;
+  }
+
+  const permissionsRes = await supabase
+    .from("user_type_permissions")
+    .upsert(rows, { onConflict: "tenant_id,user_type_id,permission_key" });
+  if (permissionsRes.error) throw permissionsRes.error;
+};
+
+const ensureUserTypeForRole = async (
+  supabase: ReturnType<typeof createClient>,
+  tenantId: string,
+  role: AppRole,
+) => {
+  const existingActiveId = await resolveUserTypeForRole(supabase, tenantId, role);
+  if (existingActiveId) {
+    await ensureUserTypePermissions(supabase, tenantId, existingActiveId, role);
+    return existingActiveId;
+  }
+
+  const anyTypeRes = await supabase
+    .from("user_types")
+    .select("id, is_active")
+    .eq("tenant_id", tenantId)
+    .eq("base_role", role)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (anyTypeRes.error) throw anyTypeRes.error;
+
+  if (anyTypeRes.data?.id) {
+    if (!anyTypeRes.data.is_active) {
+      const reactivateRes = await supabase
+        .from("user_types")
+        .update({ is_active: true })
+        .eq("id", anyTypeRes.data.id);
+      if (reactivateRes.error) throw reactivateRes.error;
+    }
+    await ensureUserTypePermissions(supabase, tenantId, anyTypeRes.data.id, role);
+    return anyTypeRes.data.id;
+  }
+
+  const defaults = ROLE_DEFAULTS[role];
+  const insertRes = await supabase
+    .from("user_types")
+    .insert({
+      tenant_id: tenantId,
+      name: defaults.name,
+      description: defaults.description,
+      base_role: role,
+      is_active: true,
+    })
+    .select("id")
+    .single();
+  if (insertRes.error) throw insertRes.error;
+
+  await ensureUserTypePermissions(supabase, tenantId, insertRes.data.id, role);
+  return insertRes.data.id;
 };
 
 const resolveFallbackObraIds = async (
@@ -766,7 +930,7 @@ Deno.serve(async (req) => {
         );
       }
 
-      const userTypeId = await resolveUserTypeForRole(
+      const userTypeId = await ensureUserTypeForRole(
         supabase,
         requestRes.data.tenant_id,
         finalRole,
@@ -1004,6 +1168,10 @@ Deno.serve(async (req) => {
           .single();
 
         if (tenantRes.error) throw tenantRes.error;
+        const userTypeByRole = {} as Record<AppRole, string>;
+        for (const role of ALL_ROLES) {
+          userTypeByRole[role] = await ensureUserTypeForRole(supabase, tenantRes.data.id, role);
+        }
 
         const profileRes = await supabase
           .from("profiles")
@@ -1013,6 +1181,7 @@ Deno.serve(async (req) => {
             phone: phone || null,
             tenant_id: tenantRes.data.id,
             is_active: true,
+            user_type_id: userTypeByRole.master,
             preferred_language: "pt-BR",
             access_mode: "template",
           })
