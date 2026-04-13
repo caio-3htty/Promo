@@ -103,6 +103,16 @@ const WAVE_COMMANDS = {
       command: "npm run smoke:rbac",
     },
     {
+      id: "smoke_tenant_isolation",
+      label: "Isolamento tenant/obra (tabelas criticas)",
+      command: "npm run smoke:tenant:isolation",
+    },
+    {
+      id: "governance_health",
+      label: "Health check de governanca",
+      command: "npm run governance:health",
+    },
+    {
       id: "alerts_dispatch_dry",
       label: "Dry-run de alertas",
       command: "npm run alerts:dispatch:dry",

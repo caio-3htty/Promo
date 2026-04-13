@@ -29,6 +29,8 @@
     "smoke:cross-app": "node scripts/smoke-cross-app.mjs",
     "smoke:cross-app:write": "node scripts/smoke-cross-app.mjs --write",
     "smoke:rbac": "node scripts/smoke-rbac-provision.mjs",
+    "smoke:tenant:isolation": "node scripts/smoke-tenant-isolation-critical.mjs",
+    "governance:health": "node scripts/governance-health-check.mjs",
     "smoke:internal:full": "node scripts/smoke-internal-cycle.mjs",
     "alerts:dispatch": "node scripts/process-critical-alerts.mjs",
     "alerts:dispatch:dry": "node scripts/process-critical-alerts.mjs --dry-run",

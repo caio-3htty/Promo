@@ -84,6 +84,8 @@ npm run smoke:web:signup
 npm run smoke:cross-app
 npm run smoke:cross-app:write
 npm run smoke:rbac
+npm run smoke:tenant:isolation
+npm run governance:health
 npm run smoke:internal:full
 npm run alerts:dispatch:dry
 npm run alerts:dispatch
@@ -115,6 +117,8 @@ Pre-requisito de cadastro:
 - `npm run smoke:web:signup`: valida cadastro web de conta empresa + conta interna (com revisao/edicao), inclui check de tenant novo sem dados operacionais no inicio e cleanup isolado.
 - `npm run smoke:cross-app`: roda os checks de leitura (sem escrita).
 - `npm run smoke:cross-app:write`: roda leitura + smoke write isolado (tenant temporario com limpeza automatica).
+- `npm run smoke:tenant:isolation`: valida isolamento tenant/obra nas tabelas criticas (`obras`, `fornecedores`, `materiais`, `material_fornecedor`, `pedidos_compra`, `estoque_obra_material`, `audit_log`).
+- `npm run governance:health`: valida consistencia administrativa (1 master ativo por tenant, master com obra, admins inconsistentes).
 - `npm run smoke:internal:full`: orquestra `smoke:web:signup` + `smoke:rbac` + `alerts:dispatch:dry` e gera relatorio unico em `docs/reports/`.
 - Erros esperados mapeados:
   - credencial invalida,
@@ -129,6 +133,8 @@ Pre-requisito de cadastro:
   - alterar o proprio tipo de usuario,
   - ser rebaixada/removida por usuario comum.
 - Novo tipo de usuario exige selecao de permissoes no salvamento.
+- Reversao assistida (`admin_revert_access_change`) e permitida para eventos delegados.
+- Eventos soberanos (`master_*`/role master) so podem ser revertidos por master.
 
 ## Publicacao da edge function (manual)
 Para publicar alteracoes em `account-access-request` em producao:

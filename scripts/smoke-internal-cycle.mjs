@@ -19,6 +19,16 @@ const STEPS = [
     command: "npm run smoke:rbac",
   },
   {
+    id: "smoke_tenant_isolation",
+    label: "Isolamento tenant/obra (tabelas criticas)",
+    command: "npm run smoke:tenant:isolation",
+  },
+  {
+    id: "governance_health",
+    label: "Health check de governanca",
+    command: "npm run governance:health",
+  },
+  {
     id: "alerts_dispatch_dry",
     label: "Alertas dry-run",
     command: "npm run alerts:dispatch:dry",
@@ -63,7 +73,7 @@ const buildReport = (results, generatedAt) => {
   const passCount = results.length - failCount;
   const lines = [];
 
-  lines.push(`# Validacao interna: materiais + conta limpa + notificacoes (${generatedAt.slice(0, 10)})`);
+  lines.push(`# Validacao interna: onboarding + governanca + isolamento + notificacoes (${generatedAt.slice(0, 10)})`);
   lines.push("");
   lines.push(`- Gerado em: \`${generatedAt}\``);
   lines.push(`- Ambiente: producao isolada (smoke write com cleanup)`);
@@ -100,7 +110,7 @@ const main = () => {
   const reportDir = path.join(process.cwd(), "docs", "reports");
   const reportPath = path.join(
     reportDir,
-    `validacao-interna-materiais-notificacoes-${reportDate}.md`,
+    `validacao-interna-governanca-isolamento-${reportDate}.md`,
   );
 
   const results = [];
