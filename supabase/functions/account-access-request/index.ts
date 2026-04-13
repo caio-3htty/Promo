@@ -580,18 +580,12 @@ const resolveFallbackObraIds = async (
   return (obras.data ?? []).map((item) => item.id as string);
 };
 
-const hasObraSubset = (actorObraIds: string[], requestedObraIds: string[]) => {
-  if (!actorObraIds.length || !requestedObraIds.length) return false;
-  const actorSet = new Set(actorObraIds);
-  return requestedObraIds.every((item) => actorSet.has(item));
-};
-
 const getActorContext = async (
   supabase: ReturnType<typeof createClient>,
   actorUserId: string,
   tenantId: string,
 ) => {
-  const [profileRes, roleRes, obraRes, manageRes] = await Promise.all([
+  const [profileRes, roleRes, obraRes] = await Promise.all([
     supabase
       .from("profiles")
       .select("user_id, is_active, tenant_id")
@@ -609,50 +603,44 @@ const getActorContext = async (
       .select("obra_id")
       .eq("user_id", actorUserId)
       .eq("tenant_id", tenantId),
-    supabase.rpc("user_has_permission", {
-      _user_id: actorUserId,
-      _tenant_id: tenantId,
-      _permission_key: "users.manage",
-      _obra_id: null,
-    }),
   ]);
 
   if (profileRes.error) throw profileRes.error;
   if (roleRes.error) throw roleRes.error;
   if (obraRes.error) throw obraRes.error;
-  if (manageRes.error) throw manageRes.error;
 
   return {
     isActive: Boolean(profileRes.data?.is_active),
     role: (roleRes.data?.role ?? null) as AppRole | null,
     obraIds: (obraRes.data ?? []).map((item) => item.obra_id as string),
-    hasUsersManage: Boolean(manageRes.data),
   };
 };
 
-const getAllowedRolesForActor = (
-  actorRole: AppRole | null,
-  hasUsersManage: boolean,
-  actorObraIds: string[],
-  requestedObraIds: string[],
-): AppRole[] => {
-  if (actorRole === "master") {
-    return [...ALL_ROLES];
+const normalizeRoleList = (value: unknown): AppRole[] => {
+  if (!Array.isArray(value)) return [];
+  const set = new Set<AppRole>();
+  for (const item of value) {
+    const role = normalizeText(item) as AppRole;
+    if (isValidRole(role)) {
+      set.add(role);
+    }
   }
+  return [...set];
+};
 
-  if (!hasUsersManage) {
-    return [];
-  }
-
-  if (actorRole === "gestor") {
-    return ["gestor", "engenheiro", "operacional", "almoxarife"];
-  }
-
-  if (actorRole === "engenheiro" && hasObraSubset(actorObraIds, requestedObraIds)) {
-    return ["operacional", "almoxarife"];
-  }
-
-  return [];
+const fetchActorAllowedRoles = async (
+  supabase: ReturnType<typeof createClient>,
+  actorUserId: string,
+  tenantId: string,
+  obraIds: string[],
+) => {
+  const rpcRes = await supabase.rpc("actor_allowed_roles", {
+    _actor_user_id: actorUserId,
+    _tenant_id: tenantId,
+    _obra_ids: obraIds,
+  });
+  if (rpcRes.error) throw rpcRes.error;
+  return normalizeRoleList(rpcRes.data);
 };
 
 const pickApprover = async (
@@ -712,10 +700,10 @@ const pickApprover = async (
     const ctx = await getActorContext(supabase, candidate.user_id, tenantId);
     if (!ctx.isActive) continue;
 
-    const allowedRoles = getAllowedRolesForActor(
-      candidate.role as AppRole,
-      ctx.hasUsersManage,
-      ctx.obraIds,
+    const allowedRoles = await fetchActorAllowedRoles(
+      supabase,
+      candidate.user_id,
+      tenantId,
       requestedObraIds,
     );
 
@@ -775,6 +763,7 @@ Deno.serve(async (req) => {
         return jsonResponse({ ok: true, companies: [] });
       }
 
+      const normalizedQuery = normalizePlain(query);
       const slugQuery = slugifyCompany(query);
       const terms = [`name.ilike.%${query}%`];
       if (slugQuery) {
@@ -790,13 +779,38 @@ Deno.serve(async (req) => {
 
       if (companiesRes.error) throw companiesRes.error;
 
+      const rankedCompanies = (companiesRes.data ?? [])
+        .map((item) => {
+          const normalizedName = normalizePlain(item.name ?? "");
+          const normalizedSlug = normalizeText(item.slug ?? "");
+          let score = 0.5;
+
+          if (normalizedName === normalizedQuery) {
+            score = 1;
+          } else if (normalizedName.startsWith(normalizedQuery)) {
+            score = 0.95;
+          } else if (slugQuery && normalizedSlug === slugQuery) {
+            score = 0.92;
+          } else if (normalizedName.includes(normalizedQuery)) {
+            score = 0.8;
+          } else if (slugQuery && normalizedSlug.includes(slugQuery)) {
+            score = 0.72;
+          }
+
+          return {
+            id: item.id,
+            tenant_id: item.id,
+            name: item.name,
+            slug: item.slug,
+            score,
+          };
+        })
+        .sort((a, b) => b.score - a.score || a.name.localeCompare(b.name))
+        .slice(0, 8);
+
       return jsonResponse({
         ok: true,
-        companies: (companiesRes.data ?? []).map((item) => ({
-          id: item.id,
-          name: item.name,
-          slug: item.slug,
-        })),
+        companies: rankedCompanies,
       });
     }
 
@@ -821,15 +835,10 @@ Deno.serve(async (req) => {
 
       let allowedRoles: AppRole[] = [];
       if (requestRes.data.approver_user_id && requestRes.data.tenant_id) {
-        const actorCtx = await getActorContext(
+        allowedRoles = await fetchActorAllowedRoles(
           supabase,
           requestRes.data.approver_user_id,
           requestRes.data.tenant_id,
-        );
-        allowedRoles = getAllowedRolesForActor(
-          actorCtx.role,
-          actorCtx.hasUsersManage,
-          actorCtx.obraIds,
           asUuidList(requestRes.data.requested_obra_ids),
         );
       }
@@ -896,21 +905,17 @@ Deno.serve(async (req) => {
         return protocolError(400, "review_payload_invalid", "Solicitacao sem aprovador valido.");
       }
 
-      const actorCtx = await getActorContext(
-        supabase,
-        requestRes.data.approver_user_id,
-        requestRes.data.tenant_id,
-      );
+      const actorCtx = await getActorContext(supabase, requestRes.data.approver_user_id, requestRes.data.tenant_id);
       if (!actorCtx.isActive) {
         return protocolError(403, "profile_inactive", "Aprovador inativo para revisar solicitacao.");
       }
 
       const requestedObraIds = asUuidList(requestRes.data.requested_obra_ids);
       const finalObraIdsInput = reviewedObraIds.length ? reviewedObraIds : requestedObraIds;
-      const allowedRoles = getAllowedRolesForActor(
-        actorCtx.role,
-        actorCtx.hasUsersManage,
-        actorCtx.obraIds,
+      const allowedRoles = await fetchActorAllowedRoles(
+        supabase,
+        requestRes.data.approver_user_id,
+        requestRes.data.tenant_id,
         finalObraIdsInput,
       );
 
@@ -1334,24 +1339,13 @@ Deno.serve(async (req) => {
           `,
         );
 
-        if (!emailRes.ok) {
-          const rollbackRes = await rollbackCompanyRegistration(supabase, userId, tenantRes.data.id);
-          return businessError(
-            "email_delivery_failed",
-            "Conta empresa nao foi concluida porque o e-mail de boas-vindas nao pode ser enviado.",
-            {
-              emailSent: false,
-              emailWarning: emailRes.reason,
-              rollbackStatus: rollbackRes.ok ? "completed" : "partial",
-              rollbackIssues: rollbackRes.ok ? [] : rollbackRes.issues,
-            },
-          );
-        }
-
         return jsonResponse({
           ok: true,
-          message: "Conta empresa criada com sucesso.",
-          emailSent: true,
+          message: emailRes.ok
+            ? "Conta empresa criada com sucesso."
+            : "Conta empresa criada com aviso no envio de e-mail.",
+          emailSent: emailRes.ok,
+          emailWarning: emailRes.reason,
         });
       } catch (error) {
         if (createdTenantId) {

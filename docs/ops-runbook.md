@@ -122,6 +122,14 @@ Pre-requisito de cadastro:
   - usuario inativo,
   - problema de chave/ambiente.
 
+## Regras operacionais de acesso (usuarios/obras)
+- Ao criar obra, o sistema vincula automaticamente o criador em `user_obras`.
+- A Home deve refletir obras novas imediatamente apos criar/editar/excluir/restaurar obra (refresh de acesso).
+- Conta `master` nao pode:
+  - alterar o proprio tipo de usuario,
+  - ser rebaixada/removida por usuario comum.
+- Novo tipo de usuario exige selecao de permissoes no salvamento.
+
 ## Publicacao da edge function (manual)
 Para publicar alteracoes em `account-access-request` em producao:
 ```bash
@@ -130,6 +138,65 @@ npx supabase@2.84.4 functions deploy account-access-request --project-ref <SUPAB
 Requisitos:
 - `SUPABASE_ACCESS_TOKEN` configurado no ambiente (ou `supabase login` previamente executado).
 - Em ambientes com Node 18 pode haver warnings de engine; deploy pode prosseguir.
+
+## Hotfix urgente de governanca (recuperacao Master)
+Usar somente em incidente de perda de soberania da conta master (ex.: auto-rebaixamento, desvinculo de obras).
+
+### SQL transacional (break-glass)
+```sql
+begin;
+
+-- 1) Reativar profile e garantir tenant correto
+update public.profiles
+set
+  is_active = true,
+  tenant_id = '<TENANT_ID>'::uuid
+where user_id = '<TARGET_USER_ID>'::uuid;
+
+-- 2) Restaurar role master no tenant
+insert into public.user_roles (user_id, tenant_id, role)
+values ('<TARGET_USER_ID>'::uuid, '<TENANT_ID>'::uuid, 'master'::public.app_role)
+on conflict (user_id)
+do update set role = excluded.role, tenant_id = excluded.tenant_id;
+
+-- 3) Reconstituir vinculos de todas as obras do tenant
+insert into public.user_obras (user_id, obra_id, tenant_id)
+select '<TARGET_USER_ID>'::uuid, o.id, '<TENANT_ID>'::uuid
+from public.obras o
+where o.tenant_id = '<TENANT_ID>'::uuid
+on conflict (user_id, obra_id)
+do update set tenant_id = excluded.tenant_id;
+
+-- 4) Registrar evento de auditoria
+insert into public.audit_log (
+  tenant_id,
+  entity_table,
+  entity_id,
+  action,
+  changed_by,
+  target_user_id,
+  old_data,
+  new_data
+) values (
+  '<TENANT_ID>'::uuid,
+  'profiles',
+  '<TARGET_USER_ID>'::uuid,
+  'master_recovery_hotfix',
+  auth.uid(),
+  '<TARGET_USER_ID>'::uuid,
+  null,
+  jsonb_build_object('role', 'master', 'is_active', true, 'scope', 'all_obras')
+);
+
+commit;
+```
+
+### Checklist pos-incidente
+1. Login da conta master restaurada.
+2. Acesso `/obras` carregando sem erro.
+3. Acesso `/usuarios-acessos` com `users.manage`.
+4. Teste de criacao/edicao de usuario concluido.
+5. Registro `master_recovery_hotfix` visivel em auditoria.
 
 ## Politica de commit
 - Nao commitar build artifacts e caches.
