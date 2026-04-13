@@ -1,4 +1,4 @@
-﻿-- TCC consolidation: real-world workflow, uncertainty-based stock, alerts and substitution automation
+-- TCC consolidation: real-world workflow, uncertainty-based stock, alerts and substitution automation
 
 -- 1) Estoque metadata for uncertainty workflow
 ALTER TABLE public.estoque_obra_material

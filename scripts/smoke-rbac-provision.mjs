@@ -565,7 +565,7 @@ async function main() {
     return { rows: res.data.length };
   });
 
-  await check("Engenheiro aprova pedido e define codigo", async () => {
+  await check("Engenheiro avanca pedido para aprovando e define codigo", async () => {
     if (!created.pedidoAId) throw new Error("pedidoAId missing");
     const token = sessions.engenheiro.access_token;
 
@@ -573,7 +573,7 @@ async function main() {
       method: "PATCH",
       prefer: "return=representation",
       body: {
-        status: "aprovado",
+        status: "aprovando",
         codigo_compra: `ENG-${tag}`,
       },
     });
@@ -694,7 +694,7 @@ async function main() {
   });
 
   let pedidoBId = null;
-  await check("Preparar pedido aprovado na obra B para almoxarife", async () => {
+  await check("Preparar pedido em transporte na obra B para almoxarife", async () => {
     if (!created.materialId || !created.fornecedorId) {
       throw new Error("material/fornecedor missing");
     }
@@ -710,7 +710,7 @@ async function main() {
         quantidade: 4,
         preco_unit: 15.5,
         total: 62,
-        status: "aprovado",
+        status: "em_transporte",
       },
     });
 

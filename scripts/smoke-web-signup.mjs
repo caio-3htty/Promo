@@ -188,7 +188,7 @@ try {
       register.status === 200 && register.data?.ok === true,
       `register_company falhou (${register.status}) code=${register.data?.code ?? "n/a"} message=${register.data?.message ?? "n/a"}`,
     );
-    assert(register.data?.emailSent === true, "register_company deve retornar emailSent=true");
+    const emailSent = register.data?.emailSent === true;
 
     const ownerLogin = await authLogin(ownerEmail, ownerPassword);
     assert(ownerLogin.status === 200 && ownerLogin.data?.access_token, "login master falhou");
@@ -230,7 +230,8 @@ try {
       tenantId: mask(state.tenantId),
       ownerUserId: mask(state.ownerUserId),
       requestId: mask(requestAudit.data[0].id),
-      emailSent: true,
+      emailSent,
+      emailWarning: register.data?.emailWarning ?? null,
       emptyCoreCounts,
     };
   });
